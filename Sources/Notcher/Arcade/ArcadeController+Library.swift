@@ -11,6 +11,9 @@ extension ArcadeController {
 
     func reloadLibrary() {
         roms = library.sorted
+        if roms.count > save.stats.maximum("rom.library") {
+            save.stats.apply(.maximum("rom.library", roms.count))
+        }
         resumable = Set(roms.filter { library.hasResumeState($0) }.map(\.id))
         var fresh: [String: CGImage] = [:]
         for entry in roms {
@@ -66,6 +69,10 @@ extension ArcadeController {
             // Picking up an old game waits for a button, like a paused one.
             if session.resumed { session.pause() }
             consoleSession = session
+            save.stats.apply(.count("rom.launches", 1))
+            save.stats.apply(.count("rom.system.\(entry.system.rawValue)", 1))
+            checkAchievements()
+            persist()
         }
         ConsoleAudio.shared.setVolume(Prefs.volume, muted: !Prefs.soundEnabled)
         ConsoleAudio.shared.start()
@@ -85,6 +92,7 @@ extension ArcadeController {
         ConsoleAudio.shared.stop()
         library.notePlayed(session.entry.id, seconds: seconds)
         save.stats.playSeconds += seconds
+        save.stats.apply(.count("rom.seconds", Int(seconds.rounded())))
         refreshThumbnail(session.entry)
         reloadLibrary()
         checkAchievements()

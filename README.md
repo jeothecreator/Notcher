@@ -5,13 +5,39 @@
 <h1 align="center">Notcher</h1>
 
 <p align="center"><b>Your notch. Your arcade.</b><br>
-Hover the MacBook notch to play one of 20 keyboard-first mini games, then hit Esc to go back to work.</p>
+Drag a NES or Game Boy ROM onto the MacBook notch and it plays right there. Or hover the notch for 20 built-in mini games. Esc takes you back to work.</p>
 
 ---
 
 Notcher turns the notch into a small arcade that behaves like the Dynamic Island. It's built for the half-minute gaps in a workday: waiting on an AI agent, a build, a download or a compile.
 
 **Hover → Choose → Play → Esc → Back to work.**
+
+## Play your own ROMs
+
+<p align="center">
+  <img src="docs/screenshots/console-nes.jpg" width="720" alt="A NES game running in the notch, with the D-pad and buttons lighting up on either side">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/drop.jpg" width="49%" alt="Dragging a ROM toward the notch turns it into a drop target">
+  <img src="docs/screenshots/library.jpg" width="49%" alt="The Library page with the last frame of each game as its poster">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/console-gbc.jpg" width="49%" alt="A Game Boy Color game in the notch">
+  <img src="docs/screenshots/console-gb.jpg" width="49%" alt="An original Game Boy game in classic green">
+</p>
+
+- **Drag to play.** Drag a `.nes`, `.gb` or `.gbc` file, or a `.zip` with one inside, toward the notch. It opens into a drop target; let go and the game starts. You can also click **Add ROM** in the Library, use **Open ROM…** (⌘O) in the menu bar, or choose **Open With → Notcher** in Finder.
+- **A library that remembers.** Every game you add is kept on the Library page, with the last frame you saw as its poster. For You offers a **Continue** card for the game you played last. Right-click a game to start over, show it in Finder or remove it.
+- **Esc saves your spot.** Leaving a game snapshots it, and the next launch continues exactly there. Battery saves (the cartridge's own save RAM) are written to disk every few seconds while you play. `⌘S` / `⌘L` give you a quick-save slot on top.
+- **Feels like a handheld.** The picture sits in a bezel between a D-pad and A/B buttons that light up as you press them. NES games get soft scanlines, Game Boy games an LCD pixel grid (or switch to sharp pixels in Settings), and original Game Boy games come in classic green or Pocket grey.
+- **Keyboard or controller.** Arrows or WASD move, `X` is A, `Z` is B, `↵` is Start, `⌫` is Select, hold `tab` to fast-forward and `P` pauses. Xbox, PlayStation, Switch Pro and MFi controllers work too.
+- **Emulators written for Notcher.** Both consoles are emulated in plain Swift: a cycle-accurate 6502 with the NES picture and sound chips, and an SM83 with the Game Boy and Game Boy Color hardware. Emulation runs on its own thread and locks to your display's refresh, and the audio stream adjusts its rate by fractions of a percent to stay in step with the picture. See [Accuracy](#accuracy) for what is covered.
+- **Three demo games included.** *Night Flight* (NES), *Color Flight* (GBC) and *Pocket Flight* (GB) are tiny original homebrew games built into Notcher, so there's something to play before you add your own. Click **Try the demos** in the empty Library.
+
+Notcher doesn't include or download any commercial games. Only play ROMs of games you own.
 
 <p align="center">
   <img src="docs/screenshots/launcher.jpg" width="720" alt="The Notcher launcher expanded out of the notch">
@@ -27,14 +53,16 @@ Notcher turns the notch into a small arcade that behaves like the Dynamic Island
   <img src="docs/screenshots/quit.jpg" width="49%" alt="The two-step quit button">
 </p>
 
+## Built-in games
+
 - **Hover to open.** The notch grows sideways, then down, and the games fade in.
-- **Pick a page.** For You shows today's challenge, your recent games and new arrivals. Action, Puzzle, Brain and Idle hold the rest. Resting on a page in the sidebar switches to it.
+- **Pick a page.** For You shows today's challenge, the ROM you played last and your recent games. Library holds your ROMs; Action, Puzzle, Brain and Idle hold the built-in games. Resting on a page in the sidebar switches to it.
 - **Hover to launch.** Rest on a game for 0.3 s and it starts. A ring of light around the tile shows the countdown, and moving away cancels it.
 - **Esc to leave.** Esc closes the game and hands keyboard focus back to the app you were in. Clicking anywhere else does the same.
 - **Quit from the notch.** The power button in the header asks once, then quits. Settings and the menu bar icon have a Quit button too.
 - **No Play button, no loading screen, no account.**
 
-## The games
+### The games
 
 | | Game | Controls |
 |---|---|---|
@@ -100,7 +128,7 @@ Keys that work everywhere: `esc` back to work · `P` pause · `R` restart · `M`
 
 - **Daily challenge.** Every player gets the same game, seed and target each day, drawn from 14 games. Completed days build a streak 🔥.
 - **Personal records.** Best scores, run history and Today / This Week / All Time views for every game and micro game.
-- **55 achievements.** Speed Demon, Snake God, Flawless, Card Shark, Genius, Grandmaster, Back to Work (exit with Esc 100 times), Tourist (play all 20 games) and more. Each one unlocks with a Dynamic-Island-style toast.
+- **59 achievements.** Speed Demon, Snake God, Flawless, Card Shark, Genius, Grandmaster, Back to Work (exit with Esc 100 times), Tourist (play all 20 games), Blow on the Cartridge (play one of your ROMs) and more. Each one unlocks with a Dynamic-Island-style toast.
 - **Share cards.** After a run, `S` renders a 1200×675 score card, copies it to the clipboard and opens the share sheet.
 - **Live ticker.** When the notch is closed, a small stat sits beside it: Miner coins counting up, crops ready on the Farm, or your daily streak.
 - **No account.** You get an anonymous ID like `PLAYER-7X42` and can add a nickname if you want one. Everything stays on your Mac.
@@ -135,10 +163,12 @@ Sources/
 ├── NotcherCore/            Pure Swift (Foundation only), unit-tested on macOS and Linux
 │   ├── Engine/             GameEngine protocol, input, seeded RNG, particles, geometry
 │   ├── Games/              20 engines + 6 Arcade micro games, all deterministic state machines
+│   ├── Emulation/          NES and Game Boy / Color emulators, ROM library, zip reader, demo cartridges
 │   └── Meta/               Catalog, word lists, score book, stats, achievements, daily challenge, save file
 └── Notcher/                The macOS app (AppKit + SwiftUI)
     ├── App/                Notch panel, window controller, hotkey, key mapping, app delegate
-    ├── Arcade/             ArcadeController (notch state machine, hover-to-launch), GameSession
+    ├── Arcade/             ArcadeController (notch state machine, hover-to-launch, drops), GameSession
+    ├── Console/            ROM sessions: emulation thread, frame pacing, audio, controllers
     ├── Services/           Sound synthesizer, save store, share cards, prefs
     ├── UI/                 Notch shape, launcher pages, game screen, trophies, settings
     └── Games/              Canvas / SwiftUI renderers for every game
@@ -149,7 +179,25 @@ Sources/
 - **Keyboard navigation** in the launcher is spatial: arrows move to the nearest item in that direction, across the sidebar, header and grid, and `tab` flips pages.
 - **Game loop.** A `CADisplayLink` ticks the active engine, which runs at 120 Hz on ProMotion displays. Engines emit events (sounds, stats, records, screen shake), and the app turns those into audio, achievements and personal records.
 - **Sound** is synthesized at launch with `AVAudioEngine`. The app ships no audio files.
-- **Persistence** is one JSON file in `~/Library/Application Support/Notcher/`. Decoding is tolerant, so updates never wipe your progress.
+- **Persistence** is one JSON file in `~/Library/Application Support/Notcher/`. Decoding is tolerant, so updates never wipe your progress. ROMs live next to it in `Library/`, with their battery saves, resume states and posters.
+- **Drag and drop.** The panel normally lets clicks through, so it watches the drag pasteboard's types (never its contents) while a mouse button is held. When files are dragged near the notch it starts accepting mouse events there and shows the drop target.
+
+## Accuracy
+
+The emulators are checked against the standard community test ROMs on every push (`Scripts/fetch-test-roms.sh` downloads them; they aren't stored in the repo):
+
+| Test | Result |
+|---|---|
+| Blargg `cpu_instrs` (Game Boy, all 11) | passes |
+| Blargg `instr_timing` (Game Boy) | passes |
+| Blargg `mem_timing` (Game Boy) | passes |
+| Blargg `official_only` (NES, all 16) | passes |
+| `nestest` (NES, every instruction against the reference log) | matches |
+
+Cartridge hardware:
+
+- **NES:** NROM, MMC1, UxROM, CNROM, MMC3, AxROM, Color Dreams and GxROM (mappers 0, 1, 2, 3, 4, 7, 11 and 66), which covers most of the licensed library. Others are recognized and named when you add them.
+- **Game Boy / Color:** ROM only, MBC1, MBC2, MBC3 (with its real-time clock) and MBC5, which covers nearly every game.
 
 ## Screenshots
 
@@ -159,7 +207,7 @@ The images in this README are rendered by the app itself:
 .build/release/Notcher --render-previews previews/
 ```
 
-That command plays every game for a few seconds with a small autopilot and writes each notch state to a PNG. CI runs it on every push and attaches the results as the `Notcher-previews` artifact.
+That command plays every game for a few seconds with a small autopilot, flies the demo cartridges through their emulators, and writes each notch state to a PNG. CI runs it on every push and attaches the results as the `Notcher-previews` artifact.
 
 ## Tests
 
@@ -167,7 +215,7 @@ That command plays every game for a few seconds with a small autopilot and write
 swift test
 ```
 
-The core suite covers engine rules (Stack rotation, line clears and hold; Sudoku generation with a unique solution; Gems swaps and special gems; Lexi letter marking with repeated letters; Four's AI taking wins and blocking threats; 2048 merges; Mines flood fill and chording; Solitaire moves, undo and auto-finish), the economies (Miner offline income cap, Farm growth), score books, achievements, daily challenges and save compatibility. It runs on both Linux and macOS in CI.
+The core suite covers the emulators (CPU instructions and timing, PPU rendering, sprites, scrolling, mappers, save states, battery RAM, the demo cartridges end to end), the ROM library and zip reader, engine rules (Stack rotation, line clears and hold; Sudoku generation with a unique solution; Gems swaps and special gems; Lexi letter marking with repeated letters; Four's AI taking wins and blocking threats; 2048 merges; Mines flood fill and chording; Solitaire moves, undo and auto-finish), the economies (Miner offline income cap, Farm growth), score books, achievements, daily challenges and save compatibility. It runs on both Linux and macOS in CI.
 
 ---
 

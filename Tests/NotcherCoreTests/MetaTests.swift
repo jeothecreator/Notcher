@@ -137,6 +137,22 @@ final class StatsAndAchievementTests: XCTestCase {
         XCTAssertTrue(again.isEmpty)
     }
 
+    func testROMAchievements() {
+        var stats = PlayerStats()
+        stats.apply(.count("rom.launches", 1))
+        stats.apply(.count("rom.system.nes", 1))
+        stats.apply(.maximum("rom.library", 3))
+        XCTAssertEqual(Set(AchievementCatalog.newlyUnlocked(stats: stats, unlocked: []).map(\.id)), ["rom.first"])
+        stats.apply(.count("rom.system.gameBoy", 2))
+        stats.apply(.count("rom.system.gameBoyColor", 1))
+        stats.apply(.maximum("rom.library", 10))
+        stats.apply(.count("rom.seconds", 3_600))
+        XCTAssertEqual(
+            Set(AchievementCatalog.newlyUnlocked(stats: stats, unlocked: ["rom.first"]).map(\.id)),
+            ["rom.systems", "rom.collector", "rom.hour"]
+        )
+    }
+
     func testUniqueIDs() {
         let ids = AchievementCatalog.all.map(\.id)
         XCTAssertEqual(ids.count, Set(ids).count)

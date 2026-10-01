@@ -179,6 +179,15 @@ public enum AchievementCatalog {
                     measure: { ($0.escExits, 100) }),
         Achievement("general.daily", "Daily Devotee", "Complete 3 daily challenges.", symbol: "calendar", game: nil,
                     measure: { ($0.dailyCompleted.count, 3) }),
+        // Your ROMs
+        Achievement("rom.first", "Blow on the Cartridge", "Play a game from your own ROMs.", symbol: "memorychip.fill", game: nil,
+                    measure: atLeast("rom.launches", 1)),
+        Achievement("rom.systems", "Console Hopper", "Play NES, Game Boy and Game Boy Color games.", symbol: "square.stack.3d.up.fill", game: nil,
+                    measure: { stats in (ConsoleSystem.allCases.filter { stats.counter("rom.system.\($0.rawValue)") > 0 }.count, ConsoleSystem.allCases.count) }),
+        Achievement("rom.collector", "Collector", "Keep 10 games in your library.", symbol: "books.vertical.fill", game: nil,
+                    measure: atLeast("rom.library", 10, in: \.maxima)),
+        Achievement("rom.hour", "Retro Hour", "Play your ROMs for an hour in total.", symbol: "clock.fill", game: nil,
+                    measure: { stats in (stats.counter("rom.seconds") / 60, 60) }),
     ]
 
     public static func achievement(id: String) -> Achievement? {

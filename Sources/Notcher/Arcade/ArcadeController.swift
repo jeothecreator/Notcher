@@ -900,7 +900,8 @@ final class ArcadeController {
     }
 
     func prepareForQuit() {
-        if consoleSession != nil { suspendConsole() }
+        // A ROM closed with Esc was already saved; only one still on screen needs it.
+        if case .console = mode { suspendConsole() }
         flushPlayTime()
         persistIdleGames()
         store.saveNow(save)
