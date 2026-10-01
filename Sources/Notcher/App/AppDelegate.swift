@@ -6,6 +6,14 @@ import SwiftUI
 enum NotcherMain {
     @MainActor
     static func main() {
+        let args = CommandLine.arguments
+        if let flag = args.firstIndex(of: "--render-previews") {
+            Prefs.register()
+            _ = NSApplication.shared
+            let path = flag + 1 < args.count ? args[flag + 1] : "previews"
+            PreviewRenderer.run(into: URL(fileURLWithPath: path))
+            return
+        }
         let app = NSApplication.shared
         let delegate = AppDelegate()
         app.delegate = delegate

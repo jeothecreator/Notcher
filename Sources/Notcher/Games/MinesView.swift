@@ -6,6 +6,7 @@ struct MinesView: View {
     let session: GameSession
     let engine: MinesEngine
     let revision: Int
+    @Environment(\.previewRendering) private var previewRendering
 
     static let logical = CGSize(width: 640, height: 240)
     static let stride: CGFloat = 29
@@ -24,7 +25,7 @@ struct MinesView: View {
                 ctx.fit(Self.logical, in: size)
                 MinesRenderer.draw(engine, in: ctx)
             }
-            .overlay(
+            .overlay(previewRendering ? nil :
                 ClickCatcher(
                     onClick: { point, secondary in
                         guard let cell = Self.cell(at: point, in: proxy.size) else { return }

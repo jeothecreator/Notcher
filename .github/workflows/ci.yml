@@ -36,3 +36,23 @@ jobs:
           name: Notcher-app
           path: build/Notcher.zip
           if-no-files-found: error
+      - name: Render previews
+        run: |
+          build/Notcher.app/Contents/MacOS/Notcher --render-previews build/previews
+          ls -la build/previews
+      - name: Upload previews
+        uses: actions/upload-artifact@v4
+        with:
+          name: Notcher-previews
+          path: build/previews
+      - name: Print previews
+        # Small JPEGs in the log so the previews can be inspected without artifact access.
+        run: |
+          mkdir -p /tmp/previews
+          for f in build/previews/*.png; do
+            name="$(basename "$f" .png)"
+            sips -Z 1000 -s format jpeg -s formatOptions 72 "$f" --out "/tmp/previews/$name.jpg" >/dev/null
+            echo "=====BEGIN $name"
+            base64 -b 76 -i "/tmp/previews/$name.jpg"
+            echo "=====END $name"
+          done

@@ -94,7 +94,7 @@ struct LeaderboardsPane: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 14) {
-            ScrollView(.vertical, showsIndicators: false) {
+            VerticalScroll {
                 VStack(spacing: 3) {
                     ForEach(BoardInfo.allBoards, id: \.self) { key in
                         boardRow(key)
@@ -240,7 +240,7 @@ struct AchievementsPane: View {
     let arcade: ArcadeController
 
     var body: some View {
-        ScrollView(.vertical, showsIndicators: false) {
+        VerticalScroll {
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 8) {
                 ForEach(AchievementCatalog.all) { achievement in
                     badge(achievement)

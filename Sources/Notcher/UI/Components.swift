@@ -243,3 +243,36 @@ extension View {
         )
     }
 }
+
+// MARK: - Preview rendering
+
+private struct PreviewRenderingKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    /// True while views are rendered to images (ImageRenderer can't draw AppKit-backed views).
+    var previewRendering: Bool {
+        get { self[PreviewRenderingKey.self] }
+        set { self[PreviewRenderingKey.self] = newValue }
+    }
+}
+
+/// A vertical ScrollView, or plain content when rendering previews.
+struct VerticalScroll<Content: View>: View {
+    @Environment(\.previewRendering) private var previewRendering
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        if previewRendering {
+            VStack(spacing: 0) {
+                content
+                Spacer(minLength: 0)
+            }
+        } else {
+            ScrollView(.vertical, showsIndicators: false) {
+                content
+            }
+        }
+    }
+}

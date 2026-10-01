@@ -7,10 +7,10 @@ final class SaveStore {
     let url: URL
     private var pending: Task<Void, Never>?
 
-    init() {
+    init(folder: URL? = nil) {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
             ?? URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent("Library/Application Support")
-        let folder = base.appendingPathComponent("Notcher", isDirectory: true)
+        let folder = folder ?? base.appendingPathComponent("Notcher", isDirectory: true)
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         url = folder.appendingPathComponent("save.json")
     }

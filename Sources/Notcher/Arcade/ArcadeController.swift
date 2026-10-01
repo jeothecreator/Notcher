@@ -667,6 +667,35 @@ final class ArcadeController {
         save = store.reset()
     }
 
+    // MARK: - Preview rendering hooks
+
+    func previewState(mode: NotchMode, hovered: LauncherItem? = nil, focused: Bool = false, toast: Toast? = nil) {
+        self.mode = mode
+        self.hovered = hovered
+        self.isFocused = focused
+        self.toast = toast
+        if let hovered { selection = hovered }
+    }
+
+    /// Builds a session the way `launch` would, without focus, sound or stats side effects.
+    @discardableResult
+    func previewSession(_ game: GameID, daily isDaily: Bool = false, engine: GameEngine? = nil) -> GameSession {
+        let session: GameSession
+        if let engine {
+            session = GameSession(game: game, engine: engine, daily: isDaily ? daily : nil)
+            session.onEvents = { [weak self] session, events in self?.handle(events, from: session) }
+            session.onPhaseChange = { [weak self] session, old, new in self?.phaseChanged(session, from: old, to: new) }
+        } else {
+            session = makeSession(game, daily: isDaily ? daily : nil)
+        }
+        sessions[isDaily ? "daily-\(daily.dayKey)" : game.rawValue] = session
+        activeSession = session
+        mode = .game(game)
+        toast = nil
+        toastQueue.removeAll()
+        return session
+    }
+
     func isPaused(_ game: GameID) -> Bool {
         sessions[game.rawValue]?.phase == .paused
     }

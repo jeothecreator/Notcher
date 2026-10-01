@@ -15,10 +15,13 @@ final class SoundEngine {
     private let sampleRate = 44_100.0
     private lazy var format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 1)
 
+    /// Set while rendering previews so nothing makes noise.
+    var suppressed = false
+
     private init() {}
 
     func play(_ cue: SoundCue) {
-        guard Prefs.soundEnabled else { return }
+        guard Prefs.soundEnabled, !suppressed else { return }
         let now = ProcessInfo.processInfo.systemUptime
         if let last = lastPlayed[cue], now - last < 0.035 { return }
         lastPlayed[cue] = now
