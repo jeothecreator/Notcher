@@ -47,6 +47,7 @@ jobs:
           path: build/previews
       - name: Print previews
         # Small JPEGs in the log so the previews can be inspected without artifact access.
+        if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[previews]')
         run: |
           mkdir -p /tmp/previews
           for f in build/previews/*.png; do

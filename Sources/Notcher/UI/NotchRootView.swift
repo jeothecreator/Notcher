@@ -65,6 +65,8 @@ struct NotchRootView: View {
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        // The panel sits over the camera housing; never inset for it.
+        .ignoresSafeArea()
         .coordinateSpace(.named("panel"))
         .focusEffectDisabled()
         .onPreferenceChange(ItemFramesKey.self) { frames in
