@@ -106,6 +106,10 @@ Keys that work everywhere: `esc` back to work · `P` pause · `R` restart · `M`
 - **No account.** You get an anonymous ID like `PLAYER-7X42` and can add a nickname if you want one. Everything stays on your Mac.
 - **Works without a notch.** On Macs without one, Notcher shows a small pill at the top of the screen that expands the same way.
 
+<p align="center">
+  <img src="docs/screenshots/share-card.jpg" width="560" alt="A score card made with S after a run">
+</p>
+
 ## Install & run
 
 Requirements: macOS 14 Sonoma or later, Xcode 16+ (Swift 5.9+).
