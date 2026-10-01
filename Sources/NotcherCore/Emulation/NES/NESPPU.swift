@@ -283,7 +283,7 @@ final class NESPPU {
                 status &= 0x1F
             }
             if rendering {
-                if (dot >= 2 && dot <= 257) || (dot >= 322 && dot <= 337) {
+                if (dot >= 2 && dot <= 257) || (dot >= 321 && dot <= 337) {
                     shiftBackground()
                     switch (dot - 1) & 7 {
                     case 0:
