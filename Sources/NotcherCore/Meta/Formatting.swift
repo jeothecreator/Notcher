@@ -74,6 +74,7 @@ public enum Format {
         case .points: return grouped(value)
         case .milliseconds: return "\(value) ms"
         case .duration: return duration(ms: value)
+        case .wpm: return "\(value) wpm"
         }
     }
 

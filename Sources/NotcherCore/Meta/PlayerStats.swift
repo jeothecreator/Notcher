@@ -14,8 +14,20 @@ public struct PlayerStats: Codable, Equatable, Sendable {
     public var plays: [String: Int] = [:]
     /// Day keys of completed daily challenges.
     public var dailyCompleted: [String] = []
+    /// Game ids, most recently launched first.
+    public var recent: [String] = []
 
     public init() {}
+
+    public mutating func noteLaunch(_ game: GameID) {
+        recent.removeAll { $0 == game.rawValue }
+        recent.insert(game.rawValue, at: 0)
+        if recent.count > 8 { recent.removeLast(recent.count - 8) }
+    }
+
+    public var recentGames: [GameID] {
+        recent.compactMap(GameID.init(rawValue:))
+    }
 
     public func counter(_ key: String) -> Int { counters[key] ?? 0 }
     public func maximum(_ key: String) -> Int { maxima[key] ?? 0 }
@@ -66,7 +78,7 @@ public struct PlayerStats: Codable, Equatable, Sendable {
     }
 
     enum CodingKeys: String, CodingKey {
-        case gamesPlayed, gameLaunches, escExits, playSeconds, counters, maxima, minima, plays, dailyCompleted
+        case gamesPlayed, gameLaunches, escExits, playSeconds, counters, maxima, minima, plays, dailyCompleted, recent
     }
 
     // Tolerant decoding: new fields never invalidate an old save.
@@ -81,6 +93,7 @@ public struct PlayerStats: Codable, Equatable, Sendable {
         minima = try c.decodeIfPresent([String: Int].self, forKey: .minima) ?? [:]
         plays = try c.decodeIfPresent([String: Int].self, forKey: .plays) ?? [:]
         dailyCompleted = try c.decodeIfPresent([String].self, forKey: .dailyCompleted) ?? []
+        recent = try c.decodeIfPresent([String].self, forKey: .recent) ?? []
     }
 }
 

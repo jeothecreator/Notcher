@@ -238,15 +238,21 @@ public final class GemsEngine: EngineBase, GameEngine {
         hint = nil
         idleTime = 0
         grid.swapAt(a, b)
-        grid[a]?.start = Vec2(Double(q.x - p.x), Double(q.y - p.y))
-        grid[b]?.start = Vec2(Double(p.x - q.x), Double(p.y - q.y))
-        grid[a]?.offset = grid[a]?.start ?? .zero
-        grid[b]?.offset = grid[b]?.start ?? .zero
+        setSlide(a, from: Vec2(Double(q.x - p.x), Double(q.y - p.y)))
+        setSlide(b, from: Vec2(Double(p.x - q.x), Double(p.y - q.y)))
         let starSwap = grid[a]?.kind == Self.starKind || grid[b]?.kind == Self.starKind
         let valid = starSwap || !findRuns().isEmpty
         stage = .swapping(a: a, b: b, progress: 0, revert: !valid)
         lastSwap = (a, b)
         play(.slide)
+    }
+
+    /// Starts a gem sliding into place from `offset` cells away.
+    private func setSlide(_ i: Int, from offset: Vec2) {
+        guard var gem = grid[i] else { return }
+        gem.start = offset
+        gem.offset = offset
+        grid[i] = gem
     }
 
     // MARK: Tick
@@ -276,10 +282,8 @@ public final class GemsEngine: EngineBase, GameEngine {
                 // Invalid: swap back.
                 grid.swapAt(a, b)
                 let pa = GridPoint(a % Self.size, a / Self.size), pb = GridPoint(b % Self.size, b / Self.size)
-                grid[a]?.start = Vec2(Double(pb.x - pa.x), Double(pb.y - pa.y))
-                grid[b]?.start = Vec2(Double(pa.x - pb.x), Double(pa.y - pb.y))
-                grid[a]?.offset = grid[a]?.start ?? .zero
-                grid[b]?.offset = grid[b]?.start ?? .zero
+                setSlide(a, from: Vec2(Double(pb.x - pa.x), Double(pb.y - pa.y)))
+                setSlide(b, from: Vec2(Double(pa.x - pb.x), Double(pa.y - pb.y)))
                 stage = .swapping(a: a, b: b, progress: 0, revert: false)
                 lastSwap = nil
                 play(.error)
@@ -300,15 +304,17 @@ public final class GemsEngine: EngineBase, GameEngine {
             }
         case .falling:
             var settled = true
-            for i in grid.indices where (grid[i]?.offset.y ?? 0) < 0 {
-                grid[i]?.fallSpeed += 46 * dt
-                grid[i]?.offset.y += (grid[i]?.fallSpeed ?? 0) * dt
-                if (grid[i]?.offset.y ?? 0) >= 0 {
-                    grid[i]?.offset.y = 0
-                    grid[i]?.fallSpeed = 0
+            for i in grid.indices {
+                guard var gem = grid[i], gem.offset.y < 0 else { continue }
+                gem.fallSpeed += 46 * dt
+                gem.offset.y += gem.fallSpeed * dt
+                if gem.offset.y >= 0 {
+                    gem.offset.y = 0
+                    gem.fallSpeed = 0
                 } else {
                     settled = false
                 }
+                grid[i] = gem
             }
             if settled {
                 if findRuns().isEmpty {

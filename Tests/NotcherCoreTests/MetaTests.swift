@@ -155,6 +155,15 @@ final class StatsAndAchievementTests: XCTestCase {
         XCTAssertEqual(stats.dailyStreak(today: today, calendar: cal), 4)
     }
 
+    func testRecentGames() {
+        var stats = PlayerStats()
+        for game in [GameID.snake, .runner, .snake, .lexi] { stats.noteLaunch(game) }
+        XCTAssertEqual(stats.recentGames, [.lexi, .snake, .runner])
+        for game in GameID.allCases { stats.noteLaunch(game) }
+        XCTAssertEqual(stats.recent.count, 8)
+        XCTAssertEqual(stats.recentGames.first, GameID.allCases.last)
+    }
+
     func testProfileID() {
         var rng = SeededRandom(seed: 1)
         let p = PlayerProfile.generate(using: &rng)
