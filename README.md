@@ -13,11 +13,11 @@ Notcher turns the notch into a small arcade that behaves like the Dynamic Island
 
 **Hover → Choose → Play → Esc → Back to work.**
 
-## Play your own ROMs
-
 <p align="center">
   <img src="docs/screenshots/console-nes.jpg" width="720" alt="A NES game running in the notch, with the D-pad and buttons lighting up on either side">
 </p>
+
+## Play your own ROMs
 
 <p align="center">
   <img src="docs/screenshots/drop.jpg" width="49%" alt="Dragging a ROM toward the notch turns it into a drop target">
@@ -39,8 +39,10 @@ Notcher turns the notch into a small arcade that behaves like the Dynamic Island
 
 Notcher doesn't include or download any commercial games. Only play ROMs of games you own.
 
+## Built-in games
+
 <p align="center">
-  <img src="docs/screenshots/launcher.jpg" width="720" alt="The Notcher launcher expanded out of the notch">
+  <img src="docs/screenshots/launcher.jpg" width="720" alt="The For You page: today's challenge, the ROM you played last and your recent games">
 </p>
 
 <p align="center">
@@ -52,8 +54,6 @@ Notcher doesn't include or download any commercial games. Only play ROMs of game
   <img src="docs/screenshots/launcher-brain.jpg" width="49%" alt="The Brain page with tall poster tiles">
   <img src="docs/screenshots/quit.jpg" width="49%" alt="The two-step quit button">
 </p>
-
-## Built-in games
 
 - **Hover to open.** The notch grows sideways, then down, and the games fade in.
 - **Pick a page.** For You shows today's challenge, the ROM you played last and your recent games. Library holds your ROMs; Action, Puzzle, Brain and Idle hold the built-in games. Resting on a page in the sidebar switches to it.
