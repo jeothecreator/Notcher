@@ -91,6 +91,41 @@ enum DisplayChoice: String, CaseIterable, Identifiable {
     }
 }
 
+/// Shades for original Game Boy games.
+enum GameBoyPalette: String, CaseIterable, Identifiable {
+    case classic, pocket
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .classic: return "Classic green"
+        case .pocket: return "Pocket grey"
+        }
+    }
+
+    var colors: [UInt32] {
+        switch self {
+        case .classic: return GameBoy.greenPalette
+        case .pocket: return GameBoy.grayPalette
+        }
+    }
+}
+
+/// How console pictures are drawn.
+enum ScreenFilter: String, CaseIterable, Identifiable {
+    case authentic, sharp
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .authentic: return "Authentic (scanlines, LCD grid)"
+        case .sharp: return "Sharp pixels"
+        }
+    }
+}
+
 /// UserDefaults-backed preferences. Views bind with @AppStorage using the
 /// same keys; everything else reads through here.
 enum Prefs {
@@ -107,6 +142,9 @@ enum Prefs {
         static let display = "display"
         static let sudokuDifficulty = "sudokuDifficulty"
         static let onboarded = "onboarded"
+        static let gbPalette = "gameBoyPalette"
+        static let screenFilter = "screenFilter"
+        static let resumeROMs = "resumeROMs"
     }
 
     static var defaults: UserDefaults { .standard }
@@ -125,6 +163,9 @@ enum Prefs {
             Key.display: DisplayChoice.automatic.rawValue,
             Key.sudokuDifficulty: SudokuEngine.Difficulty.medium.rawValue,
             Key.onboarded: false,
+            Key.gbPalette: GameBoyPalette.classic.rawValue,
+            Key.screenFilter: ScreenFilter.authentic.rawValue,
+            Key.resumeROMs: true,
         ])
     }
 
@@ -156,6 +197,17 @@ enum Prefs {
         get { SudokuEngine.Difficulty(rawValue: defaults.integer(forKey: Key.sudokuDifficulty)) ?? .medium }
         set { defaults.set(newValue.rawValue, forKey: Key.sudokuDifficulty) }
     }
+
+    static var gbPalette: GameBoyPalette {
+        GameBoyPalette(rawValue: defaults.string(forKey: Key.gbPalette) ?? "") ?? .classic
+    }
+
+    static var screenFilter: ScreenFilter {
+        ScreenFilter(rawValue: defaults.string(forKey: Key.screenFilter) ?? "") ?? .authentic
+    }
+
+    /// Reopening a ROM continues exactly where you pressed Esc.
+    static var resumeROMs: Bool { defaults.bool(forKey: Key.resumeROMs) }
 
     static func toggleSound() {
         defaults.set(!soundEnabled, forKey: Key.sound)

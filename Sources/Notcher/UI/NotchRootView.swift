@@ -1,5 +1,6 @@
 import NotcherCore
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// Frames of hoverable launcher items in panel coordinates.
 struct ItemFramesKey: PreferenceKey {
@@ -53,6 +54,7 @@ struct NotchRootView: View {
             .frame(height: size.height, alignment: .top)
             .animation(.spring(response: 0.46, dampingFraction: 0.82), value: size.height)
             .clipShape(NotchShape(topRadius: top, bottomRadius: bottom))
+            .onDrop(of: [.fileURL], delegate: NotchDropDelegate(arcade: arcade))
             .overlay(alignment: .bottom) {
                 if expanded, let toast = arcade.toast {
                     ToastPill(toast: toast)
@@ -71,6 +73,9 @@ struct NotchRootView: View {
         .focusEffectDisabled()
         .onPreferenceChange(ItemFramesKey.self) { frames in
             arcade.itemFrames = frames
+        }
+        .onPreferenceChange(LibraryViewportKey.self) { rect in
+            arcade.libraryViewport = rect
         }
         .environment(\.colorScheme, .dark)
     }
@@ -98,6 +103,15 @@ struct NotchRootView: View {
                     .transition(.notchContent)
                     .id(ObjectIdentifier(session))
             }
+        case .console:
+            if let session = arcade.consoleSession {
+                ConsoleScreen(arcade: arcade, session: session)
+                    .transition(.notchContent)
+                    .id(ObjectIdentifier(session))
+            }
+        case .drop:
+            DropZoneView(arcade: arcade)
+                .transition(.notchContent)
         }
     }
 }

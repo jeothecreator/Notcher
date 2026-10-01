@@ -59,6 +59,7 @@ public enum LibraryError: Error, Equatable, CustomStringConvertible {
 ///       ROMs/<id>.nes|.gb|.gbc
 ///       Saves/<id>.sav        battery-backed cartridge RAM
 ///       States/<id>.state     where you left off
+///       States/<id>.quick     the quick-save slot
 ///       Shots/<id>.png        last frame, for the launcher
 public final class RomLibrary {
     public enum ImportResult: Equatable {
@@ -113,6 +114,10 @@ public final class RomLibrary {
 
     public func stateURL(_ entry: RomEntry) -> URL {
         folder.appendingPathComponent("States").appendingPathComponent("\(entry.id).state")
+    }
+
+    public func quickStateURL(_ entry: RomEntry) -> URL {
+        folder.appendingPathComponent("States").appendingPathComponent("\(entry.id).quick")
     }
 
     public func thumbnailURL(_ entry: RomEntry) -> URL {
@@ -180,7 +185,7 @@ public final class RomLibrary {
 
     public func remove(_ id: String) {
         guard let entry = entry(id) else { return }
-        for url in [romURL(entry), saveURL(entry), stateURL(entry), thumbnailURL(entry)] {
+        for url in [romURL(entry), saveURL(entry), stateURL(entry), quickStateURL(entry), thumbnailURL(entry)] {
             try? fileManager.removeItem(at: url)
         }
         entries.removeAll { $0.id == id }
@@ -230,6 +235,28 @@ public final class RomLibrary {
 
     public func deleteResumeState(_ entry: RomEntry) {
         try? fileManager.removeItem(at: stateURL(entry))
+    }
+
+    public func quickState(_ entry: RomEntry) -> [UInt8]? {
+        fileManager.contents(atPath: quickStateURL(entry).path).map { [UInt8]($0) }
+    }
+
+    public func writeQuickState(_ data: [UInt8], for entry: RomEntry) {
+        try? Data(data).write(to: quickStateURL(entry), options: .atomic)
+    }
+
+    /// When the quick-save slot was last written.
+    public func quickStateDate(_ entry: RomEntry) -> Date? {
+        (try? fileManager.attributesOfItem(atPath: quickStateURL(entry).path))?[.modificationDate] as? Date
+    }
+
+    /// Encoded image of the last frame (the app writes PNG).
+    public func writeThumbnail(_ data: Data, for entry: RomEntry) {
+        try? data.write(to: thumbnailURL(entry), options: .atomic)
+    }
+
+    public func thumbnail(_ entry: RomEntry) -> Data? {
+        fileManager.contents(atPath: thumbnailURL(entry).path)
     }
 
     public func persist() {

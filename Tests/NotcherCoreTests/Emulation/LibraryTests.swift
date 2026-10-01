@@ -65,6 +65,8 @@ final class LibraryTests: XCTestCase {
 
         library.writeBattery([1, 2, 3], for: entry)
         library.writeResumeState([9, 9], for: entry)
+        library.writeQuickState([7], for: entry)
+        library.writeThumbnail(Data([0x89, 0x50]), for: entry)
         library.notePlayed(entry.id, seconds: 42)
         library.rename(entry.id, to: "  Renamed  ")
 
@@ -76,11 +78,16 @@ final class LibraryTests: XCTestCase {
         XCTAssertEqual(reopened.battery(restored), [1, 2, 3])
         XCTAssertEqual(reopened.resumeState(restored), [9, 9])
         XCTAssertTrue(reopened.hasResumeState(restored))
+        XCTAssertEqual(reopened.quickState(restored), [7])
+        XCTAssertNotNil(reopened.quickStateDate(restored))
+        XCTAssertEqual(reopened.thumbnail(restored), Data([0x89, 0x50]))
         XCTAssertEqual(reopened.recentlyPlayed.map(\.id), [entry.id])
 
         reopened.remove(entry.id)
         XCTAssertTrue(reopened.entries.isEmpty)
         XCTAssertFalse(FileManager.default.fileExists(atPath: reopened.romURL(entry).path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: reopened.quickStateURL(entry).path))
+        XCTAssertNil(reopened.thumbnail(entry))
         XCTAssertTrue(RomLibrary(folder: folder).entries.isEmpty)
     }
 

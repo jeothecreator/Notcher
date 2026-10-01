@@ -17,6 +17,9 @@ struct SettingsView: View {
     @AppStorage(Prefs.Key.drawThree) private var drawThree = false
     @AppStorage(Prefs.Key.display) private var display = DisplayChoice.automatic.rawValue
     @AppStorage(Prefs.Key.sudokuDifficulty) private var sudokuDifficulty = SudokuEngine.Difficulty.medium.rawValue
+    @AppStorage(Prefs.Key.gbPalette) private var gbPalette = GameBoyPalette.classic.rawValue
+    @AppStorage(Prefs.Key.screenFilter) private var screenFilter = ScreenFilter.authentic.rawValue
+    @AppStorage(Prefs.Key.resumeROMs) private var resumeROMs = true
 
     @State private var nickname = ""
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
@@ -41,6 +44,31 @@ struct SettingsView: View {
                     }
                 }
                 .padding(.vertical, 4)
+            }
+
+            Section("Your ROMs") {
+                LabeledContent("Library") {
+                    HStack(spacing: 8) {
+                        Text(arcade.roms.count == 1 ? "1 game" : "\(arcade.roms.count) games")
+                            .foregroundStyle(.secondary)
+                        Button("Add…") { arcade.requestOpenPanel() }
+                        Button("Show in Finder") { arcade.revealLibrary() }
+                    }
+                }
+                Toggle("Continue where you left off", isOn: $resumeROMs)
+                Picker("Game Boy colours", selection: $gbPalette) {
+                    ForEach(GameBoyPalette.allCases) { Text($0.title).tag($0.rawValue) }
+                }
+                Picker("Screen", selection: $screenFilter) {
+                    ForEach(ScreenFilter.allCases) { Text($0.title).tag($0.rawValue) }
+                }
+                LabeledContent("Controller") {
+                    Text(GamepadInput.shared.connectedName ?? "None connected")
+                        .foregroundStyle(.secondary)
+                }
+                Text("Drag a NES, Game Boy or Game Boy Color ROM (or a zip) onto the notch to add and play it. Controls: arrows or WASD move, X is A, Z is B, Return is Start, Backspace is Select, hold Tab to fast-forward. Xbox, PlayStation and MFi controllers work too. Only play games you own.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
             }
 
             Section("Notch") {

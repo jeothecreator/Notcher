@@ -105,6 +105,12 @@ final class NotchWindowController: NSObject, NSWindowDelegate {
         }) {
             monitors.append(global)
         }
+        // Remember the drag pasteboard as each press starts, to tell a fresh file drag apart.
+        if let press = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseDown, handler: { [weak self] _ in
+            MainActor.assumeIsolated { self?.noteMouseDown() }
+        }) {
+            monitors.append(press)
+        }
         if let local = NSEvent.addLocalMonitorForEvents(matching: mouseEvents, handler: { [weak self] event in
             MainActor.assumeIsolated { self?.trackMouse() }
             return event
@@ -132,10 +138,47 @@ final class NotchWindowController: NSObject, NSWindowDelegate {
         let location = NSEvent.mouseLocation
         let frame = panel.frame
         let point = CGPoint(x: location.x - frame.minX, y: frame.maxY - location.y)
-        if point == lastPointer { return }
+        let dragging = trackFileDrag(point)
+        if point == lastPointer && !dragging { return }
         lastPointer = point
-        arcade.pointerMoved(point)
+        if !dragging { arcade.pointerMoved(point) }
         updateClickThrough(point)
+    }
+
+    // MARK: - File drags
+
+    private var dragBaseline = NSPasteboard(name: .drag).changeCount
+    private var fileDragActive = false
+    private var mouseWasDown = false
+
+    private func noteMouseDown() {
+        dragBaseline = NSPasteboard(name: .drag).changeCount
+    }
+
+    /// Watches for files being dragged anywhere on screen, so the notch can
+    /// open up as a drop target before the pointer arrives. Only the
+    /// pasteboard's types are read until the user actually drops.
+    private func trackFileDrag(_ point: CGPoint) -> Bool {
+        let pressed = NSEvent.pressedMouseButtons & 1 != 0
+        defer { mouseWasDown = pressed }
+        guard pressed else {
+            if mouseWasDown {
+                // Whatever was dragged is over; only a new drag counts from here.
+                dragBaseline = NSPasteboard(name: .drag).changeCount
+            }
+            if fileDragActive {
+                fileDragActive = false
+                arcade.fileDragEnded()
+            }
+            return false
+        }
+        if !fileDragActive {
+            let board = NSPasteboard(name: .drag)
+            guard board.changeCount != dragBaseline, board.types?.contains(.fileURL) == true else { return false }
+            fileDragActive = true
+        }
+        arcade.fileDragMoved(to: point, names: [])
+        return true
     }
 
     private func updateClickThrough(_ point: CGPoint?) {
@@ -154,9 +197,13 @@ final class NotchWindowController: NSObject, NSWindowDelegate {
 
     private func handleKey(_ event: NSEvent) -> Bool {
         guard event.window === panel || (event.window == nil && panel.isKeyWindow) else { return false }
-        guard let key = KeyMapper.map(event, textMode: arcade.wantsTextInput) else { return false }
+        guard let key = KeyMapper.map(event, textMode: arcade.wantsTextInput, console: arcade.wantsConsoleInput) else { return false }
         if event.type == .keyUp {
-            if case .game(let gameKey) = key { arcade.keyUp(gameKey) }
+            switch key {
+            case .game(let gameKey): arcade.keyUp(gameKey)
+            case .console(let consoleKey): arcade.keyUp(consoleKey)
+            default: break
+            }
             return true
         }
         return arcade.keyDown(key, isRepeat: event.isARepeat)
@@ -205,7 +252,7 @@ final class NotchWindowController: NSObject, NSWindowDelegate {
     // MARK: - Game loop
 
     private func modeDidChange(_ mode: NotchMode) {
-        if case .game = mode {
+        if mode.isPlaying {
             startLoop()
         } else {
             stopLoop()

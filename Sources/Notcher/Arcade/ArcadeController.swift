@@ -8,20 +8,35 @@ enum NotchMode: Equatable {
     case launcher
     case game(GameID)
     case trophies
+    /// A ROM from the library, by id.
+    case console(String)
+    /// A ROM file is being dragged near the notch.
+    case drop
 
     var isExpanded: Bool { self != .closed }
+
+    /// Modes that hold keyboard focus and run the game loop.
+    var isPlaying: Bool {
+        switch self {
+        case .game, .console: return true
+        default: return false
+        }
+    }
 }
 
 /// A page of the launcher, picked in the sidebar.
 enum LauncherPage: Hashable {
     case forYou
+    /// The user's own ROMs.
+    case library
     case category(GameCategory)
 
-    static let all: [LauncherPage] = [.forYou] + GameCategory.allCases.map { .category($0) }
+    static let all: [LauncherPage] = [.forYou, .library] + GameCategory.allCases.map { .category($0) }
 
     var title: String {
         switch self {
         case .forYou: return "For You"
+        case .library: return "Library"
         case .category(let c): return c.title
         }
     }
@@ -29,13 +44,14 @@ enum LauncherPage: Hashable {
     var symbol: String {
         switch self {
         case .forYou: return "sparkles"
+        case .library: return "square.stack.3d.up.fill"
         case .category(let c): return c.symbol
         }
     }
 
     var games: [GameID] {
         switch self {
-        case .forYou: return []
+        case .forYou, .library: return []
         case .category(let c): return GameID.inCategory(c)
         }
     }
@@ -48,13 +64,22 @@ enum LauncherItem: Hashable {
     case trophies
     case settings
     case quit
+    /// A ROM in the library, by id.
+    case rom(String)
+    /// Choose a ROM file to add.
+    case addRom
 
     /// Only games launch on hover; pages switch after a short dwell; buttons need a click.
     var launchesOnHover: Bool {
         switch self {
-        case .game, .daily: return true
-        case .page, .trophies, .settings, .quit: return false
+        case .game, .daily, .rom: return true
+        case .page, .trophies, .settings, .quit, .addRom: return false
         }
+    }
+
+    var isROM: Bool {
+        if case .rom = self { return true }
+        return false
     }
 }
 
@@ -65,6 +90,7 @@ enum ShellKey: Equatable {
     case share
     case mute
     case settings
+    case console(ConsoleKey)
 }
 
 struct Toast: Identifiable, Equatable {
@@ -117,6 +143,23 @@ final class ArcadeController {
     var trophiesTab: TrophiesTab = .achievements
     var save: ArcadeSave
 
+    // ROMs (managed in ArcadeController+Library.swift)
+    let library: RomLibrary
+    /// Library entries, most recently played first.
+    var roms: [RomEntry] = []
+    /// ROMs with a saved "continue" point.
+    var resumable: Set<String> = []
+    var consoleSession: ConsoleSession?
+    /// Last frames of each ROM, for the library tiles.
+    var thumbnails: [String: CGImage] = [:]
+    /// The pointer is over the notch while dragging a file.
+    var dropTargeted = false
+    /// Names of the files being dragged, when the drag pasteboard is readable.
+    var dragNames: [String] = []
+    @ObservationIgnored var libraryViewport: CGRect?
+    @ObservationIgnored var modeBeforeDrop: NotchMode = .closed
+    @ObservationIgnored var dropEndTask: Task<Void, Never>?
+
     @ObservationIgnored var itemFrames: [LauncherItem: CGRect] = [:]
     @ObservationIgnored var panelSize = CGSize(width: 876, height: 480)
 
@@ -140,12 +183,15 @@ final class ArcadeController {
     @ObservationIgnored var openSettings: () -> Void = {}
     @ObservationIgnored var quitApp: () -> Void = {}
     @ObservationIgnored var shareRequested: (GameSession, RunSummary) -> Void = { _, _ in }
+    @ObservationIgnored var requestOpenPanel: () -> Void = {}
 
-    init(store: SaveStore) {
+    init(store: SaveStore, libraryFolder: URL? = nil) {
         self.store = store
         self.save = store.load()
         self.daily = DailyChallenge.forDate(Date())
         self.showTicker = Prefs.showTicker
+        self.library = RomLibrary(folder: libraryFolder ?? store.folder.appendingPathComponent("Library", isDirectory: true))
+        reloadLibrary()
     }
 
     // MARK: - Geometry
@@ -172,6 +218,12 @@ final class ArcadeController {
         case .game(let game):
             let field = GameScreen.fieldSize(for: game)
             return CGSize(width: field.width + (field.width >= 680 ? 40 : 60), height: h + field.height + 54)
+        case .console(let id):
+            let system = consoleSession?.system ?? library.entry(id)?.system ?? .nes
+            let content = ConsoleScreen.contentSize(for: system)
+            return CGSize(width: content.width, height: h + content.height)
+        case .drop:
+            return CGSize(width: 560, height: h + 176)
         }
     }
 
@@ -215,11 +267,23 @@ final class ArcadeController {
                 scheduleClose()
             }
             if mode == .launcher {
-                updateHover(inside ? itemFrames.first(where: { $0.value.contains(p) })?.key : nil)
+                updateHover(inside ? item(at: p) : nil)
             }
-        case .game:
+        case .game, .console, .drop:
             break
         }
+    }
+
+    /// The launcher item under the pointer. Library tiles scrolled out of
+    /// view still report frames, so those only count inside the viewport.
+    private func item(at p: CGPoint) -> LauncherItem? {
+        itemFrames.first { item, frame in
+            guard frame.contains(p) else { return false }
+            if page == .library, item.isROM || item == .addRom, let viewport = libraryViewport {
+                return viewport.contains(p)
+            }
+            return true
+        }?.key
     }
 
     private func scheduleOpen() {
@@ -233,7 +297,7 @@ final class ArcadeController {
         }
     }
 
-    private func cancelOpen() {
+    func cancelOpen() {
         openTask?.cancel()
         openTask = nil
     }
@@ -248,7 +312,7 @@ final class ArcadeController {
         }
     }
 
-    private func cancelClose() {
+    func cancelClose() {
         closeTask?.cancel()
         closeTask = nil
     }
@@ -281,7 +345,7 @@ final class ArcadeController {
         }
     }
 
-    private func cancelCharge() {
+    func cancelCharge() {
         chargeTask?.cancel()
         chargeTask = nil
         charging = nil
@@ -289,7 +353,7 @@ final class ArcadeController {
 
     // MARK: - Mode changes
 
-    private func setMode(_ newMode: NotchMode) {
+    func setMode(_ newMode: NotchMode) {
         guard newMode != mode else { return }
         withAnimation(Theme.spring) {
             mode = newMode
@@ -342,6 +406,10 @@ final class ArcadeController {
             activeSession?.pause()
             flushPlayTime()
         }
+        if case .console = mode {
+            suspendConsole()
+        }
+        dropTargeted = false
         persistIdleGames()
         setMode(.closed)
         resignFocus()
@@ -351,11 +419,11 @@ final class ArcadeController {
         switch mode {
         case .closed:
             return
-        case .game:
+        case .game, .console:
             save.stats.escExits += 1
             checkAchievements()
             persist()
-        case .launcher, .trophies:
+        case .launcher, .trophies, .drop:
             break
         }
         hoverSuppressed = true
@@ -365,7 +433,7 @@ final class ArcadeController {
     /// The panel gained or lost keyboard focus.
     func focusChanged(_ focused: Bool) {
         isFocused = focused
-        if !focused, case .game = mode {
+        if !focused, mode.isPlaying {
             // Clicked somewhere else: that's "back to work" too.
             hoverSuppressed = true
             close()
@@ -389,6 +457,10 @@ final class ArcadeController {
             } else {
                 armQuit()
             }
+        case .rom(let id):
+            playROM(id)
+        case .addRom:
+            requestOpenPanel()
         }
     }
 
@@ -405,7 +477,7 @@ final class ArcadeController {
         }
     }
 
-    private func disarmQuit() {
+    func disarmQuit() {
         quitTask?.cancel()
         quitTask = nil
         if quitArmed {
@@ -493,6 +565,10 @@ final class ArcadeController {
     }
 
     func frame(_ dt: Double) {
+        if case .console = mode {
+            consoleSession?.tick(dt)
+            return
+        }
         guard let session = activeSession, case .game = mode else { return }
         session.tick(dt)
         if session.phase == .playing {
@@ -594,12 +670,19 @@ final class ArcadeController {
             close()
             openSettings()
             return true
-        case .share, .game:
+        case .share, .game, .console:
             break
         }
 
         switch mode {
-        case .closed:
+        case .closed, .drop:
+            return false
+        case .console:
+            guard let session = consoleSession else { return false }
+            if case .console(let k) = key {
+                session.press(k, isRepeat: isRepeat)
+                return true
+            }
             return false
         case .trophies:
             if case .game(let k) = key, k == .left || k == .confirm {
@@ -631,6 +714,16 @@ final class ArcadeController {
         activeSession?.release(key)
     }
 
+    func keyUp(_ key: ConsoleKey) {
+        consoleSession?.release(key)
+    }
+
+    /// True while a ROM is running, so keys map to console buttons.
+    var wantsConsoleInput: Bool {
+        if case .console = mode { return true }
+        return false
+    }
+
     /// True while the active game takes typed letters, so P, M and S type instead.
     var wantsTextInput: Bool {
         guard case .game = mode, let session = activeSession else { return false }
@@ -641,6 +734,7 @@ final class ArcadeController {
     func firstItem(on page: LauncherPage) -> LauncherItem {
         switch page {
         case .forYou: return .daily
+        case .library: return roms.first.map { .rom($0.id) } ?? .addRom
         case .category: return page.games.first.map { .game($0) } ?? .page(page)
         }
     }
@@ -702,7 +796,7 @@ final class ArcadeController {
 
     // MARK: - Achievements & toasts
 
-    private func checkAchievements() {
+    func checkAchievements() {
         let fresh = AchievementCatalog.newlyUnlocked(stats: save.stats, unlocked: Set(save.achievements.keys))
         guard !fresh.isEmpty else { return }
         for achievement in fresh {
@@ -806,12 +900,15 @@ final class ArcadeController {
     }
 
     func prepareForQuit() {
+        if consoleSession != nil { suspendConsole() }
         flushPlayTime()
         persistIdleGames()
         store.saveNow(save)
     }
 
     func reloadPrefs() {
+        consoleSession?.applyPalette()
+        ConsoleAudio.shared.setVolume(Prefs.volume, muted: !Prefs.soundEnabled)
         let ticker = Prefs.showTicker
         if ticker != showTicker {
             withAnimation(Theme.spring) { showTicker = ticker }
@@ -834,8 +931,10 @@ final class ArcadeController {
 
     // MARK: - Preview rendering hooks
 
-    func previewState(mode: NotchMode, page: LauncherPage = .forYou, hovered: LauncherItem? = nil, charging: LauncherItem? = nil, focused: Bool = false, toast: Toast? = nil, quitArmed: Bool = false) {
+    func previewState(mode: NotchMode, page: LauncherPage = .forYou, hovered: LauncherItem? = nil, charging: LauncherItem? = nil, focused: Bool = false, toast: Toast? = nil, quitArmed: Bool = false, dropTargeted: Bool = false, dragNames: [String] = []) {
         self.mode = mode
+        self.dropTargeted = dropTargeted
+        self.dragNames = dragNames
         self.page = page
         self.quitArmed = quitArmed
         self.hovered = hovered

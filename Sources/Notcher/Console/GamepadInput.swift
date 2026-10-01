@@ -1,15 +1,17 @@
 import GameController
 import NotcherCore
+import Observation
 
 /// Reads whichever game controller is connected (Xbox, PlayStation, Switch
 /// Pro, MFi). Buttons map by position like Nintendo's layout: the right face
 /// button is A, the bottom one is B.
 @MainActor
+@Observable
 final class GamepadInput {
     static let shared = GamepadInput()
 
+    /// The connected controller's name, if any.
     private(set) var connectedName: String?
-    var onChange: (() -> Void)?
 
     private init() {
         // A notch panel never makes Notcher the active app, so listen in the background.
@@ -25,8 +27,8 @@ final class GamepadInput {
     }
 
     private func refresh() {
-        connectedName = GCController.current?.vendorName ?? GCController.controllers().first?.vendorName
-        onChange?()
+        let controller = GCController.current ?? GCController.controllers().first
+        connectedName = controller.map { $0.vendorName ?? "Controller" }
     }
 
     /// Buttons currently held on the active controller.

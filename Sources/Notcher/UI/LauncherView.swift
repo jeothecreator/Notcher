@@ -151,7 +151,7 @@ struct LauncherSidebar: View {
     let arcade: ArcadeController
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
+        VStack(alignment: .leading, spacing: 2) {
             ForEach(LauncherPage.all, id: \.self) { page in
                 SidebarRow(arcade: arcade, page: page)
             }
@@ -184,7 +184,7 @@ struct SidebarRow: View {
                 trailing
             }
             .padding(.horizontal, 9)
-            .frame(height: 28)
+            .frame(height: 26)
             .background(
                 RoundedRectangle(cornerRadius: 9, style: .continuous)
                     .fill(Color.white.opacity(current ? 0.09 : (hovered ? 0.05 : 0)))
@@ -217,6 +217,16 @@ struct SidebarRow: View {
                     .frame(width: 6, height: 6)
                     .shadow(color: Theme.dailyColors[1].opacity(0.8), radius: 3)
                     .help("Today's challenge is waiting")
+            }
+        case .library:
+            if arcade.roms.isEmpty {
+                Image(systemName: "plus")
+                    .font(.system(size: 8.5, weight: .heavy))
+                    .foregroundStyle(Theme.tertiary)
+            } else {
+                Text("\(arcade.roms.count)")
+                    .font(Theme.mono(9.5, .semibold))
+                    .foregroundStyle(Theme.tertiary)
             }
         case .category:
             Text("\(page.games.count)")
@@ -281,6 +291,8 @@ struct PageContent: View {
             switch page {
             case .forYou:
                 forYou
+            case .library:
+                LibraryPage(arcade: arcade)
             case .category:
                 categoryGrid(page.games)
             }
@@ -302,12 +314,10 @@ struct PageContent: View {
         return VStack(alignment: .leading, spacing: LauncherView.spacing) {
             HStack(spacing: LauncherView.spacing) {
                 DailyCard(arcade: arcade, size: CGSize(width: tile.width * 2 + LauncherView.spacing, height: tile.height))
-                ForEach(Array(picks.prefix(2))) { game in
-                    GameTile(game: game, arcade: arcade, size: tile)
-                }
+                LibraryCard(arcade: arcade, size: CGSize(width: tile.width * 2 + LauncherView.spacing, height: tile.height))
             }
             HStack(spacing: LauncherView.spacing) {
-                ForEach(Array(picks.dropFirst(2).prefix(4))) { game in
+                ForEach(Array(picks.prefix(4))) { game in
                     GameTile(game: game, arcade: arcade, size: tile)
                 }
             }
@@ -349,6 +359,11 @@ struct PageHeading: View {
                     .font(Theme.mono(9.5, .semibold))
                     .foregroundStyle(Theme.tertiary)
             }
+            if page == .library && !arcade.roms.isEmpty {
+                Text(arcade.roms.count == 1 ? "1 game" : "\(arcade.roms.count) games")
+                    .font(Theme.mono(9.5, .semibold))
+                    .foregroundStyle(Theme.tertiary)
+            }
         }
     }
 
@@ -361,6 +376,8 @@ struct PageHeading: View {
             case 12..<18: return "Good afternoon"
             default: return "Good evening"
             }
+        case .library:
+            return "Library"
         case .category(let c):
             return c.title
         }
@@ -370,6 +387,8 @@ struct PageHeading: View {
         switch page {
         case .forYou:
             return arcade.save.stats.recent.isEmpty ? "Twenty games, one notch. Esc is always one key away." : "Pick up where you left off."
+        case .library:
+            return arcade.roms.isEmpty ? "Your NES and Game Boy games, right in the notch." : "Esc saves your spot. Right-click a game for more."
         case .category(let c):
             return c.subtitle
         }
@@ -665,6 +684,22 @@ struct LauncherFooter: View {
                 HintLabel(keys: "⌘,", action: "open")
             case .quit:
                 label(arcade.quitArmed ? "Click again to quit" : "Quit Notcher", "Your progress is saved automatically")
+            case .rom(let id):
+                if let entry = arcade.roms.first(where: { $0.id == id }) {
+                    SystemGlyph(system: entry.system, size: 15)
+                    Text(entry.title)
+                        .font(Theme.rounded(11.5, .bold))
+                        .foregroundStyle(Theme.primary)
+                        .lineLimit(1)
+                    Text(arcade.resumable.contains(id) ? "\(entry.system.title) · continues where you left off" : entry.system.title)
+                        .font(Theme.rounded(11, .medium))
+                        .foregroundStyle(Theme.secondary)
+                        .lineLimit(1)
+                    Spacer(minLength: 8)
+                    HintRow(hints: [ControlHint("←→↑↓", "move"), ControlHint("X Z", "A B"), ControlHint("⏎", "start")])
+                }
+            case .addRom:
+                label("Add a ROM", "Choose a .nes, .gb or .gbc file, or a zip. Dragging onto the notch works too.")
             case nil:
                 Text(Prefs.hoverLaunch == .click ? "Click a game to play" : "Hover a game to play")
                     .font(Theme.rounded(11, .semibold))
@@ -694,6 +729,7 @@ struct LauncherFooter: View {
     private func pageDetail(_ page: LauncherPage) -> String {
         switch page {
         case .forYou: return "Today's challenge, recent games and new arrivals"
+        case .library: return arcade.roms.isEmpty ? "Drop NES and Game Boy ROMs on the notch" : "Your ROMs, with saves kept automatically"
         case .category(let c): return GameID.inCategory(c).map(\.title).joined(separator: " · ")
         }
     }
@@ -707,10 +743,10 @@ struct AmbientGlow: View {
 
     var body: some View {
         GeometryReader { proxy in
-            if case .game(let game)? = arcade.hovered, let frame = arcade.itemFrames[.game(game)] {
+            if let hovered = arcade.hovered, let accent = glowColor(hovered), let frame = arcade.itemFrames[hovered] {
                 let origin = proxy.frame(in: .named("panel")).origin
                 RadialGradient(
-                    colors: [game.style.accent.opacity(0.2), .clear],
+                    colors: [accent.opacity(0.2), .clear],
                     center: UnitPoint(
                         x: (frame.midX - origin.x) / max(1, proxy.size.width),
                         y: (frame.midY - origin.y) / max(1, proxy.size.height)
@@ -722,5 +758,13 @@ struct AmbientGlow: View {
         }
         .allowsHitTesting(false)
         .animation(.easeOut(duration: 0.3), value: arcade.hovered)
+    }
+
+    private func glowColor(_ item: LauncherItem) -> Color? {
+        switch item {
+        case .game(let game): return game.style.accent
+        case .rom(let id): return arcade.roms.first { $0.id == id }?.system.accent
+        default: return nil
+        }
     }
 }

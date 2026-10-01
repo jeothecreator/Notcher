@@ -115,8 +115,25 @@ extension LauncherPage {
     var colors: [Color] {
         switch self {
         case .forYou: return GameID.arcade.style.colors
+        case .library: return [Color(hex: 0x7CE7FF), Color(hex: 0x6E6BFF)]
         case .category(let c): return c.colors
         }
+    }
+}
+
+extension ConsoleSystem {
+    var colors: [Color] {
+        switch self {
+        case .nes: return [Color(hex: 0xFF7A7A), Color(hex: 0xD7263D)]
+        case .gameBoy: return [Color(hex: 0xC9EC7A), Color(hex: 0x5E9A35)]
+        case .gameBoyColor: return [Color(hex: 0xC9A8FF), Color(hex: 0x7B4DFF)]
+        }
+    }
+
+    var accent: Color { colors[0] }
+
+    var gradient: LinearGradient {
+        LinearGradient(colors: colors, startPoint: .topLeading, endPoint: .bottomTrailing)
     }
 }
 

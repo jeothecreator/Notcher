@@ -1,6 +1,7 @@
 import AppKit
 import NotcherCore
 import SwiftUI
+import UniformTypeIdentifiers
 
 @main
 enum NotcherMain {
@@ -35,6 +36,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var appliedDisplay: DisplayChoice?
     private var settingsWindow: NSWindow?
     private var defaultsObserver: NSObjectProtocol?
+    /// Files opened before launch finished (Open With, or a drop on the app icon).
+    private var pendingOpen: [URL] = []
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         Prefs.register()
@@ -45,6 +48,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         notch = NotchWindowController(arcade: arcade)
         arcade.openSettings = { [weak self] in self?.showSettings() }
         arcade.quitApp = { NSApp.terminate(nil) }
+        arcade.requestOpenPanel = { [weak self] in self?.showOpenPanel() }
 
         applyPrefs()
         defaultsObserver = NotificationCenter.default.addObserver(
@@ -59,6 +63,43 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 symbol: "gamecontroller.fill", title: "Hover the notch to play",
                 subtitle: "Esc takes you straight back to work", colors: GameID.arcade.style.colors
             ))
+            arcade.showToast(Toast(
+                symbol: "square.stack.3d.up.fill", title: "Drag a ROM onto the notch",
+                subtitle: "NES and Game Boy games play right here", colors: LauncherPage.library.colors
+            ))
+        }
+
+        if !pendingOpen.isEmpty {
+            arcade.importFiles(pendingOpen)
+            pendingOpen = []
+        }
+    }
+
+    func application(_ application: NSApplication, open urls: [URL]) {
+        if let arcade {
+            arcade.importFiles(urls)
+        } else {
+            pendingOpen += urls
+        }
+    }
+
+    // MARK: - Opening ROMs
+
+    func showOpenPanel() {
+        guard let arcade else { return }
+        if arcade.mode != .closed { arcade.close() }
+        let panel = NSOpenPanel()
+        panel.title = "Add Games to Notcher"
+        panel.message = "Choose NES or Game Boy ROMs, or zip files containing them."
+        panel.prompt = "Add"
+        panel.allowsMultipleSelection = true
+        panel.canChooseDirectories = false
+        panel.allowedContentTypes = (ConsoleSystem.allExtensions + ["zip"]).compactMap { UTType(filenameExtension: $0) }
+        NSApp.activate(ignoringOtherApps: true)
+        panel.begin { response in
+            guard response == .OK else { return }
+            let urls = panel.urls
+            MainActor.assumeIsolated { arcade.importFiles(urls) }
         }
     }
 
@@ -129,6 +170,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         trophies.target = self
         menu.addItem(trophies)
         menu.addItem(.separator())
+        let openROM = NSMenuItem(title: "Open ROM…", action: #selector(openROMFromMenu), keyEquivalent: "o")
+        openROM.target = self
+        menu.addItem(openROM)
+        let library = NSMenuItem(title: "Show ROM Library in Finder", action: #selector(revealLibrary), keyEquivalent: "")
+        library.target = self
+        menu.addItem(library)
+        menu.addItem(.separator())
         let settings = NSMenuItem(title: "Settings…", action: #selector(openSettingsFromMenu), keyEquivalent: ",")
         settings.target = self
         menu.addItem(settings)
@@ -146,6 +194,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func openTrophies() {
         arcade?.open(focus: true)
         arcade?.showTrophies()
+    }
+
+    @objc private func openROMFromMenu() {
+        showOpenPanel()
+    }
+
+    @objc private func revealLibrary() {
+        arcade?.revealLibrary()
     }
 
     @objc private func openSettingsFromMenu() {

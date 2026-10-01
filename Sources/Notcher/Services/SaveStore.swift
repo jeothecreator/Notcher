@@ -5,6 +5,8 @@ import NotcherCore
 @MainActor
 final class SaveStore {
     let url: URL
+    /// Where Notcher keeps its data (save file, ROM library).
+    let folder: URL
     private var pending: Task<Void, Never>?
 
     init(folder: URL? = nil) {
@@ -12,6 +14,7 @@ final class SaveStore {
             ?? URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent("Library/Application Support")
         let folder = folder ?? base.appendingPathComponent("Notcher", isDirectory: true)
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        self.folder = folder
         url = folder.appendingPathComponent("save.json")
     }
 
