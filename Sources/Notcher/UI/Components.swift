@@ -194,7 +194,7 @@ struct AstroGlyph: Shape {
         let center = CGPoint(x: r.minX + w * 0.6, y: r.minY + h * 0.4)
         let radii: [CGFloat] = [0.34, 0.27, 0.33, 0.24, 0.31, 0.36, 0.26, 0.32]
         for (i, k) in radii.enumerated() {
-            let a = Double(i) / Double(radii.count) * 2 * .pi
+            let a = CGFloat(i) / CGFloat(radii.count) * 2 * .pi
             let pt = CGPoint(x: center.x + cos(a) * w * k, y: center.y + sin(a) * h * k)
             if i == 0 { p.move(to: pt) } else { p.addLine(to: pt) }
         }

@@ -5,7 +5,7 @@
 <h1 align="center">Notcher</h1>
 
 <p align="center"><b>Your notch. Your arcade.</b><br>
-Hover the MacBook notch to play one of 11 keyboard-first mini games, then hit Esc to go back to work.</p>
+Hover the MacBook notch to play one of 20 keyboard-first mini games, then hit Esc to go back to work.</p>
 
 ---
 
@@ -22,47 +22,71 @@ Notcher turns the notch into a small arcade that behaves like the Dynamic Island
   <img src="docs/screenshots/toast.jpg" width="49%" alt="Achievement toast growing out of the notch">
 </p>
 
+<p align="center">
+  <img src="docs/screenshots/launcher-brain.jpg" width="49%" alt="The Brain page with tall poster tiles">
+  <img src="docs/screenshots/quit.jpg" width="49%" alt="The two-step quit button">
+</p>
+
 - **Hover to open.** The notch grows sideways, then down, and the games fade in.
+- **Pick a page.** For You shows today's challenge, your recent games and new arrivals. Action, Puzzle, Brain and Idle hold the rest. Resting on a page in the sidebar switches to it.
 - **Hover to launch.** Rest on a game for 0.3 s and it starts. A ring of light around the tile shows the countdown, and moving away cancels it.
 - **Esc to leave.** Esc closes the game and hands keyboard focus back to the app you were in. Clicking anywhere else does the same.
+- **Quit from the notch.** The power button in the header asks once, then quits. Settings and the menu bar icon have a Quit button too.
 - **No Play button, no loading screen, no account.**
 
 ## The games
 
 | | Game | Controls |
 |---|---|---|
-| ⚡ Quick | **Runner**: synthwave endless runner with coins, drones and rising speed | `space` jump (hold for height) · `↓` slide / fast-fall |
+| ⚡ Action | **Runner**: synthwave endless runner with coins, drones and rising speed | `space` jump (hold for height) · `↓` slide |
 | | **Snake**: smooth-moving snake; the arena closes in as you grow | `↑↓←→` |
 | | **Pong**: an AI opponent that gets sharper each match you win. First to 5. | `↑↓` |
 | | **Breakout**: tough bricks, power-ups (wide, multi-ball, slow, +life) and combos | `←→` · `space` launch |
-| 🧠 Brain | **2048**: animated slides and merges, with 3 undos | `↑↓←→` · `U` undo |
+| | **Invaders** · new: 55 marching aliens, crumbling shields and a mystery saucer | `←→` · `space` fire |
+| | **Astro** · new: vector space rocks with drifting physics and hyperspace | `←→` turn · `↑` thrust · `space` fire · `↓` warp |
+| | **Trails** · new: light cycles against up to three AI riders that hunt you down | `↑↓←→` |
+| | **Arcade**: a cabinet of six micro games (Flap, Dodge, Bullseye, Echo, Lander, Hop), one featured each day | `tab` switch game |
+| 🧩 Puzzle | **Stack** · new: falling blocks with hold, ghost piece, 7-bag, wall kicks and back-to-back bonuses | `←→` · `↑` rotate · `space` drop · `C` hold |
+| | **2048**: animated slides and merges, with 3 undos | `↑↓←→` · `U` undo |
+| | **Gems** · new: match three in 30 moves. Fours make line gems, L and T shapes make bombs, fives make stars | arrows + `space`, click or drag |
+| | **Sudoku** · new: freshly generated puzzles with a unique solution, notes and three difficulties | arrows · `1–9` · `F` notes · `⌫` erase · mouse |
 | | **Mines**: 20×8 field; the first click is always safe; chording supported | arrows · `↵` reveal · `F` flag · right-click |
+| | **Solitaire**: Klondike with drag & drop, double-click to send home, undo and auto-finish | arrows · `↵` pick/drop · `D` draw · `U` undo |
+| 🧠 Brain | **Lexi** · new: guess the five-letter word in six tries | type · `↵` guess · `⌫` delete |
+| | **Typer** · new: a 30-second typing test with live WPM and accuracy | type · `space` next word |
 | | **Reaction**: wait for green, then hit space | `space` |
-| 🌱 Idle | **Miner**: keeps digging while you work; four upgrade tracks | `space` mine · `↑↓ ↵` / `1–4` upgrade |
-| | **Farm**: crops grow in real time, from 30-second wheat to 45-minute starfruit | arrows · `↵` plant/harvest · `tab` seed · `A` harvest all |
-| 🎴 Classics | **Solitaire**: Klondike with drag & drop, double-click to send home, undo and auto-finish | arrows · `↵` pick/drop · `D` draw · `A` auto · `U` undo |
-| | **Arcade**: a rotating cabinet of micro games (Flap, Dodge, Bullseye, Echo), with a different one featured each day | `tab` switch game |
+| | **Four** · new: four in a row against a negamax AI that searches deeper every time you win | `←→` · `space` drop · mouse |
+| 🌱 Idle | **Miner**: keeps digging while you work; four upgrade tracks | `space` mine · `↑↓ ↵` upgrade |
+| | **Farm**: crops grow in real time, from 30-second wheat to 45-minute starfruit | arrows · `↵` plant/harvest · `tab` seed |
 
 <table>
   <tr>
+    <td><img src="docs/screenshots/invaders.jpg" alt="Invaders"></td>
+    <td><img src="docs/screenshots/astro.jpg" alt="Astro"></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/stack.jpg" alt="Stack"></td>
+    <td><img src="docs/screenshots/lexi.jpg" alt="Lexi"></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/gems.jpg" alt="Gems"></td>
+    <td><img src="docs/screenshots/sudoku.jpg" alt="Sudoku"></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/trails.jpg" alt="Trails"></td>
+    <td><img src="docs/screenshots/four.jpg" alt="Four"></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/typer.jpg" alt="Typer"></td>
     <td><img src="docs/screenshots/runner.jpg" alt="Runner"></td>
+  </tr>
+  <tr>
     <td><img src="docs/screenshots/snake.jpg" alt="Snake"></td>
-  </tr>
-  <tr>
-    <td><img src="docs/screenshots/breakout.jpg" alt="Breakout"></td>
-    <td><img src="docs/screenshots/2048.jpg" alt="2048"></td>
-  </tr>
-  <tr>
-    <td><img src="docs/screenshots/mines.jpg" alt="Mines"></td>
-    <td><img src="docs/screenshots/reaction.jpg" alt="Reaction"></td>
+    <td><img src="docs/screenshots/solitaire.jpg" alt="Solitaire"></td>
   </tr>
   <tr>
     <td><img src="docs/screenshots/miner.jpg" alt="Miner"></td>
-    <td><img src="docs/screenshots/farm.jpg" alt="Farm"></td>
-  </tr>
-  <tr>
-    <td><img src="docs/screenshots/solitaire.jpg" alt="Solitaire"></td>
-    <td><img src="docs/screenshots/arcade-flap.jpg" alt="Arcade: Flap"></td>
+    <td><img src="docs/screenshots/arcade-lander.jpg" alt="Arcade: Lander"></td>
   </tr>
   <tr>
     <td><img src="docs/screenshots/game-over.jpg" alt="Game over card"></td>
@@ -70,16 +94,16 @@ Notcher turns the notch into a small arcade that behaves like the Dynamic Island
   </tr>
 </table>
 
-Keys that work everywhere: `esc` back to work · `P` pause · `R` restart · `M` mute · `S` share score card.
+Keys that work everywhere: `esc` back to work · `P` pause · `R` restart · `M` mute · `S` share score card. In Lexi and Typer, letters type instead.
 
 ## Around the games
 
-- **Daily challenge.** Every player gets the same game, seed and target each day. Completed days build a streak 🔥.
-- **Leaderboards.** Local Today, This Week and All Time boards for every game. Global boards are optional (see below).
-- **34 achievements.** Speed Demon, Snake God, Flawless, Card Shark, Back to Work (exit with Esc 100 times), Professional Procrastinator and more. Each one unlocks with a Dynamic-Island-style toast.
+- **Daily challenge.** Every player gets the same game, seed and target each day, drawn from 14 games. Completed days build a streak 🔥.
+- **Personal records.** Best scores, run history and Today / This Week / All Time views for every game and micro game.
+- **55 achievements.** Speed Demon, Snake God, Flawless, Card Shark, Genius, Grandmaster, Back to Work (exit with Esc 100 times), Tourist (play all 20 games) and more. Each one unlocks with a Dynamic-Island-style toast.
 - **Share cards.** After a run, `S` renders a 1200×675 score card, copies it to the clipboard and opens the share sheet.
 - **Live ticker.** When the notch is closed, a small stat sits beside it: Miner coins counting up, crops ready on the Farm, or your daily streak.
-- **No account.** You get an anonymous ID like `PLAYER-7X42` and can add a nickname if you want one.
+- **No account.** You get an anonymous ID like `PLAYER-7X42` and can add a nickname if you want one. Everything stays on your Mac.
 - **Works without a notch.** On Macs without one, Notcher shows a small pill at the top of the screen that expands the same way.
 
 ## Install & run
@@ -100,33 +124,26 @@ Each CI run on macOS also uploads a ready-made `Notcher.zip`. It carries an ad-h
 
 Notcher runs as a menu bar agent: no Dock icon, with a 🎮 icon in the menu bar for Settings and Quit. The global shortcut **⌃⌥⌘G** opens the arcade with keyboard focus, and you can change it in Settings.
 
-## Optional: global leaderboards
-
-1. Create a free [Supabase](https://supabase.com) project.
-2. Run [`Backend/supabase.sql`](Backend/supabase.sql) in its SQL editor.
-3. In Notcher → Settings → Global leaderboards, paste the project URL and the public API key.
-
-Scores are then submitted automatically, and the Trophies page gains a **Global** tab.
-
 ## How it's built
 
 ```
 Sources/
 ├── NotcherCore/            Pure Swift (Foundation only), unit-tested on macOS and Linux
 │   ├── Engine/             GameEngine protocol, input, seeded RNG, particles, geometry
-│   ├── Games/              11 engines + 4 Arcade micro games, all deterministic state machines
-│   └── Meta/               Catalog, score book, stats, achievements, daily challenge, save file
+│   ├── Games/              20 engines + 6 Arcade micro games, all deterministic state machines
+│   └── Meta/               Catalog, word lists, score book, stats, achievements, daily challenge, save file
 └── Notcher/                The macOS app (AppKit + SwiftUI)
     ├── App/                Notch panel, window controller, hotkey, key mapping, app delegate
     ├── Arcade/             ArcadeController (notch state machine, hover-to-launch), GameSession
-    ├── Services/           Sound synthesizer, save store, share cards, leaderboard client, prefs
-    ├── UI/                 Notch shape, launcher, game screen, trophies, settings
+    ├── Services/           Sound synthesizer, save store, share cards, prefs
+    ├── UI/                 Notch shape, launcher pages, game screen, trophies, settings
     └── Games/              Canvas / SwiftUI renderers for every game
 ```
 
 - **The notch** is a borderless, non-activating `NSPanel` that sits above the menu bar on every Space, including over full-screen apps. The panel is transparent and passes clicks through everywhere except the visible notch shape. Notch size comes from `NSScreen.safeAreaInsets` and `auxiliaryTopLeftArea` / `auxiliaryTopRightArea`.
 - **Hover** uses global mouse tracking, so it works while another app is active and needs no Accessibility permission. **Focus**: launching a game makes the panel key, and Esc re-activates the app you came from.
-- **Game loop.** A `CADisplayLink` ticks the active engine, which runs at 120 Hz on ProMotion displays. Engines emit events (sounds, stats, records, screen shake), and the app turns those into audio, achievements and leaderboard entries.
+- **Keyboard navigation** in the launcher is spatial: arrows move to the nearest item in that direction, across the sidebar, header and grid, and `tab` flips pages.
+- **Game loop.** A `CADisplayLink` ticks the active engine, which runs at 120 Hz on ProMotion displays. Engines emit events (sounds, stats, records, screen shake), and the app turns those into audio, achievements and personal records.
 - **Sound** is synthesized at launch with `AVAudioEngine`. The app ships no audio files.
 - **Persistence** is one JSON file in `~/Library/Application Support/Notcher/`. Decoding is tolerant, so updates never wipe your progress.
 
@@ -146,7 +163,7 @@ That command plays every game for a few seconds with a small autopilot and write
 swift test
 ```
 
-The core suite covers engine rules (2048 merges, Mines flood fill and chording, Solitaire moves, undo and auto-finish, Snake turn buffering), the economies (Miner offline income cap, Farm growth), score books, achievements, daily challenges and save compatibility. It runs on both Linux and macOS in CI.
+The core suite covers engine rules (Stack rotation, line clears and hold; Sudoku generation with a unique solution; Gems swaps and special gems; Lexi letter marking with repeated letters; Four's AI taking wins and blocking threats; 2048 merges; Mines flood fill and chording; Solitaire moves, undo and auto-finish), the economies (Miner offline income cap, Farm growth), score books, achievements, daily challenges and save compatibility. It runs on both Linux and macOS in CI.
 
 ---
 

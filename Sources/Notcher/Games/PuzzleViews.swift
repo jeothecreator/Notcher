@@ -285,7 +285,7 @@ enum GemsRenderer {
         case 5: poly(5, rotation: -.pi / 2, radius: s * 0.98)
         default:
             for i in 0..<16 {
-                let a = -Double.pi / 2 + Double(i) / 16 * 2 * .pi
+                let a = -CGFloat.pi / 2 + CGFloat(i) / 16 * 2 * .pi
                 let radius = i % 2 == 0 ? s * 1.02 : s * 0.48
                 let pt = CGPoint(x: c.x + cos(a) * radius, y: c.y + sin(a) * radius)
                 if i == 0 { p.move(to: pt) } else { p.addLine(to: pt) }

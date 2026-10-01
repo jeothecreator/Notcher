@@ -47,6 +47,8 @@ final class GameSession {
         switch game {
         case .twenty48: return 0.25
         case .solitaire, .farm: return 0.1
+        case .sudoku: return 1.0 / 30
+        case .lexi, .typer: return 1.0 / 60
         default: return 0
         }
     }
