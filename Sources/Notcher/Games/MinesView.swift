@@ -134,9 +134,11 @@ enum MinesRenderer {
         let r = rect.width * 0.22
         var spikes = Path()
         for i in 0..<8 {
-            let a = Double(i) * .pi / 4
-            spikes.move(to: CGPoint(x: c.x + cos(a) * r * 0.6, y: c.y + sin(a) * r * 0.6))
-            spikes.addLine(to: CGPoint(x: c.x + cos(a) * r * 1.6, y: c.y + sin(a) * r * 1.6))
+            let a = CGFloat(i) * CGFloat.pi / 4
+            let dx: CGFloat = cos(a) * r
+            let dy: CGFloat = sin(a) * r
+            spikes.move(to: CGPoint(x: c.x + dx * 0.6, y: c.y + dy * 0.6))
+            spikes.addLine(to: CGPoint(x: c.x + dx * 1.6, y: c.y + dy * 1.6))
         }
         let color = bright ? Color.black : Color(hex: 0xFF8A80)
         ctx.stroke(spikes, with: .color(color), style: StrokeStyle(lineWidth: 2, lineCap: .round))

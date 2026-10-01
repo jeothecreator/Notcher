@@ -442,64 +442,104 @@ struct CropGlyph: View {
 
     var body: some View {
         Canvas { ctx, size in
-            let w = size.width, h = size.height
-            let stem = Color(hex: 0x5FD068)
-            let base = CGPoint(x: w / 2, y: h * 0.92)
-            if stage == 0 {
-                ctx.fillCircle(CGPoint(x: base.x, y: base.y - h * 0.06), radius: w * 0.07, with: .color(Color(hex: 0xC8A27A)))
-                return
+            CropRenderer.draw(crop, stage: stage, in: ctx, size: size)
+        }
+    }
+}
+
+enum CropRenderer {
+    static let stem = Color(hex: 0x5FD068)
+
+    static func draw(_ crop: Crop, stage: Int, in ctx: GraphicsContext, size: CGSize) {
+        let w: CGFloat = size.width
+        let h: CGFloat = size.height
+        let base = CGPoint(x: w / 2, y: h * 0.92)
+        if stage == 0 {
+            ctx.fillCircle(CGPoint(x: base.x, y: base.y - h * 0.06), radius: w * 0.07, with: .color(Color(hex: 0xC8A27A)))
+            return
+        }
+        let height: CGFloat = h * (stage == 1 ? 0.3 : (stage == 2 ? 0.55 : 0.72))
+        var stalk = Path()
+        stalk.move(to: base)
+        stalk.addLine(to: CGPoint(x: base.x, y: base.y - height))
+        ctx.stroke(stalk, with: .color(stem), style: StrokeStyle(lineWidth: max(1.5, w * 0.05), lineCap: .round))
+        for side in [CGFloat(-1), CGFloat(1)] {
+            drawLeaf(ctx, base: base, height: height, side: side, w: w, h: h)
+        }
+        guard stage >= 3 else { return }
+        let top = CGPoint(x: base.x, y: base.y - height)
+        switch crop {
+        case .wheat: drawWheat(ctx, top: top, w: w, h: h)
+        case .carrot: drawCarrot(ctx, top: top, w: w, h: h)
+        case .tomato: drawTomato(ctx, top: top, w: w, h: h)
+        case .pumpkin: drawPumpkin(ctx, base: base, w: w, h: h)
+        case .starfruit: drawStar(ctx, top: top, w: w, h: h)
+        }
+    }
+
+    static func drawLeaf(_ ctx: GraphicsContext, base: CGPoint, height: CGFloat, side: CGFloat, w: CGFloat, h: CGFloat) {
+        var leaf = Path()
+        let y: CGFloat = base.y - height * 0.45
+        leaf.move(to: CGPoint(x: base.x, y: y))
+        leaf.addQuadCurve(
+            to: CGPoint(x: base.x + side * w * 0.26, y: y - h * 0.12),
+            control: CGPoint(x: base.x + side * w * 0.2, y: y + h * 0.04)
+        )
+        leaf.addQuadCurve(
+            to: CGPoint(x: base.x, y: y),
+            control: CGPoint(x: base.x + side * w * 0.06, y: y - h * 0.14)
+        )
+        ctx.fill(leaf, with: .color(stem))
+    }
+
+    static func drawWheat(_ ctx: GraphicsContext, top: CGPoint, w: CGFloat, h: CGFloat) {
+        var grains = Path()
+        for i in 0..<5 {
+            let y: CGFloat = top.y + CGFloat(i) * h * 0.06
+            for side in [CGFloat(-1), CGFloat(1)] {
+                let x: CGFloat = top.x + side * w * 0.06 - w * 0.05
+                grains.addEllipse(in: CGRect(x: x, y: y, width: w * 0.1, height: h * 0.07))
             }
-            let height = h * (stage == 1 ? 0.3 : (stage == 2 ? 0.55 : 0.72))
-            var stalk = Path()
-            stalk.move(to: base)
-            stalk.addLine(to: CGPoint(x: base.x, y: base.y - height))
-            ctx.stroke(stalk, with: .color(stem), style: StrokeStyle(lineWidth: max(1.5, w * 0.05), lineCap: .round))
-            for side in [-1.0, 1.0] {
-                var leaf = Path()
-                let y = base.y - height * 0.45
-                leaf.move(to: CGPoint(x: base.x, y: y))
-                leaf.addQuadCurve(to: CGPoint(x: base.x + side * w * 0.26, y: y - h * 0.12), control: CGPoint(x: base.x + side * w * 0.2, y: y + h * 0.04))
-                leaf.addQuadCurve(to: CGPoint(x: base.x, y: y), control: CGPoint(x: base.x + side * w * 0.06, y: y - h * 0.14))
-                ctx.fill(leaf, with: .color(stem))
-            }
-            guard stage >= 3 else { return }
-            let top = CGPoint(x: base.x, y: base.y - height)
-            switch crop {
-            case .wheat:
-                for i in 0..<5 {
-                    let y = top.y + Double(i) * h * 0.06
-                    for side in [-1.0, 1.0] {
-                        ctx.fill(Path(ellipseIn: CGRect(x: top.x + side * w * 0.06 - w * 0.05, y: y, width: w * 0.1, height: h * 0.07)), with: .color(Color(hex: 0xF5C451)))
-                    }
-                }
-            case .carrot:
-                var carrot = Path()
-                carrot.move(to: CGPoint(x: top.x - w * 0.14, y: top.y + h * 0.12))
-                carrot.addLine(to: CGPoint(x: top.x + w * 0.14, y: top.y + h * 0.12))
-                carrot.addLine(to: CGPoint(x: top.x, y: top.y + h * 0.5))
-                carrot.closeSubpath()
-                ctx.fill(carrot, with: .color(Color(hex: 0xFF8A3D)))
-            case .tomato:
-                for (dx, dy) in [(-0.14, 0.08), (0.14, 0.12), (0.0, 0.24)] {
-                    ctx.fillCircle(CGPoint(x: top.x + w * dx, y: top.y + h * dy), radius: w * 0.12, with: .color(Color(hex: 0xFF4D4D)))
-                }
-            case .pumpkin:
-                let c = CGPoint(x: top.x, y: base.y - h * 0.2)
-                ctx.fill(Path(ellipseIn: CGRect(x: c.x - w * 0.32, y: c.y - h * 0.18, width: w * 0.64, height: h * 0.36)), with: .color(Color(hex: 0xFF9F0A)))
-                ctx.stroke(Path(ellipseIn: CGRect(x: c.x - w * 0.12, y: c.y - h * 0.18, width: w * 0.24, height: h * 0.36)), with: .color(Color(hex: 0xD9730A)), lineWidth: 1.2)
-            case .starfruit:
-                var star = Path()
-                for i in 0..<10 {
-                    let a = Double(i) * .pi / 5 - .pi / 2
-                    let r = i % 2 == 0 ? w * 0.24 : w * 0.1
-                    let p = CGPoint(x: top.x + cos(a) * r, y: top.y + h * 0.08 + sin(a) * r)
-                    if i == 0 { star.move(to: p) } else { star.addLine(to: p) }
-                }
-                star.closeSubpath()
-                ctx.glow(Color(hex: 0xFFE07A), radius: 6) { layer in
-                    layer.fill(star, with: .color(Color(hex: 0xFFE07A)))
-                }
-            }
+        }
+        ctx.fill(grains, with: .color(Color(hex: 0xF5C451)))
+    }
+
+    static func drawCarrot(_ ctx: GraphicsContext, top: CGPoint, w: CGFloat, h: CGFloat) {
+        var carrot = Path()
+        carrot.move(to: CGPoint(x: top.x - w * 0.14, y: top.y + h * 0.12))
+        carrot.addLine(to: CGPoint(x: top.x + w * 0.14, y: top.y + h * 0.12))
+        carrot.addLine(to: CGPoint(x: top.x, y: top.y + h * 0.5))
+        carrot.closeSubpath()
+        ctx.fill(carrot, with: .color(Color(hex: 0xFF8A3D)))
+    }
+
+    static func drawTomato(_ ctx: GraphicsContext, top: CGPoint, w: CGFloat, h: CGFloat) {
+        let spots: [CGPoint] = [CGPoint(x: -0.14, y: 0.08), CGPoint(x: 0.14, y: 0.12), CGPoint(x: 0, y: 0.24)]
+        for spot in spots {
+            let center = CGPoint(x: top.x + w * spot.x, y: top.y + h * spot.y)
+            ctx.fillCircle(center, radius: w * 0.12, with: .color(Color(hex: 0xFF4D4D)))
+        }
+    }
+
+    static func drawPumpkin(_ ctx: GraphicsContext, base: CGPoint, w: CGFloat, h: CGFloat) {
+        let c = CGPoint(x: base.x, y: base.y - h * 0.2)
+        let body = CGRect(x: c.x - w * 0.32, y: c.y - h * 0.18, width: w * 0.64, height: h * 0.36)
+        let rib = CGRect(x: c.x - w * 0.12, y: c.y - h * 0.18, width: w * 0.24, height: h * 0.36)
+        ctx.fill(Path(ellipseIn: body), with: .color(Color(hex: 0xFF9F0A)))
+        ctx.stroke(Path(ellipseIn: rib), with: .color(Color(hex: 0xD9730A)), lineWidth: 1.2)
+    }
+
+    static func drawStar(_ ctx: GraphicsContext, top: CGPoint, w: CGFloat, h: CGFloat) {
+        var star = Path()
+        for i in 0..<10 {
+            let a: CGFloat = CGFloat(i) * CGFloat.pi / 5 - CGFloat.pi / 2
+            let r: CGFloat = i % 2 == 0 ? w * 0.24 : w * 0.1
+            let p = CGPoint(x: top.x + cos(a) * r, y: top.y + h * 0.08 + sin(a) * r)
+            if i == 0 { star.move(to: p) } else { star.addLine(to: p) }
+        }
+        star.closeSubpath()
+        ctx.glow(Color(hex: 0xFFE07A), radius: 6) { layer in
+            layer.fill(star, with: .color(Color(hex: 0xFFE07A)))
         }
     }
 }

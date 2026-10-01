@@ -71,6 +71,17 @@ struct GameScreen: View {
                 Image(systemName: "leaf.fill").font(.system(size: 10, weight: .bold))
                 ScoreText(value: session.score, format: .points)
             }
+        case .mines:
+            HStack(spacing: 10) {
+                if let mines = session.engine as? MinesEngine {
+                    HStack(spacing: 3) {
+                        Image(systemName: "flag.fill").font(.system(size: 9, weight: .bold))
+                        Text("\(mines.minesLeft)").font(Theme.mono(13, .bold))
+                    }
+                    .opacity(0.8)
+                }
+                ScoreText(value: session.score, format: .duration)
+            }
         case .reaction:
             if let best = (session.engine as? ReactionEngine)?.best {
                 ScoreText(value: best, format: .milliseconds)

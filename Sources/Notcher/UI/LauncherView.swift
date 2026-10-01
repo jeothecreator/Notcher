@@ -13,6 +13,7 @@ struct LauncherView: View {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(alignment: .top, spacing: 16) {
                     group(.quick)
+                    Spacer(minLength: 0)
                     group(.brain)
                 }
                 HStack(alignment: .top, spacing: 16) {
