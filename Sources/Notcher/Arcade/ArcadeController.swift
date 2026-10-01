@@ -65,7 +65,7 @@ struct TickerInfo: Equatable {
 @MainActor
 @Observable
 final class ArcadeController {
-    static let earWidth: CGFloat = 40
+    static let earWidth: CGFloat = 46
     static let maxContent = CGSize(width: 720, height: 396)
     static let shadowPadding: CGFloat = 48
 
@@ -618,7 +618,7 @@ final class ArcadeController {
         if let farm = farmState {
             let ready = farm.readyCount(at: date)
             if ready > 0 {
-                return TickerInfo(symbol: "leaf.fill", text: "\(ready) ready", colors: GameID.farm.style.colors)
+                return TickerInfo(symbol: "leaf.fill", text: "\(ready)", colors: GameID.farm.style.colors)
             }
         }
         if let miner = minerState, miner.workers > 0 {

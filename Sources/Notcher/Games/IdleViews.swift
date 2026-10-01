@@ -61,7 +61,7 @@ struct MinerView: View {
                     .font(Theme.mono(13, .heavy))
                     .foregroundStyle(LinearGradient(colors: Self.gold, startPoint: .top, endPoint: .bottom))
                     .opacity(max(0, 1 - popup.age))
-                    .offset(x: CGFloat((popup.id * 37) % 60) - 30, y: -popup.age * 50)
+                    .offset(x: CGFloat((popup.id * 53) % 150) - 75, y: CGFloat((popup.id * 29) % 24) - popup.age * 56)
                     .position(x: 150, y: 96)
             }
         }

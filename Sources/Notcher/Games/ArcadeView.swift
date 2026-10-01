@@ -7,21 +7,15 @@ struct ArcadeView: View {
     let revision: Int
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
-            Canvas { ctx, size in
-                _ = revision
-                ctx.fit(CGSize(width: 640, height: 240), in: size)
-                switch engine.current {
-                case let e as FlapEngine: FlapRenderer.draw(e, in: ctx)
-                case let e as DodgeEngine: DodgeRenderer.draw(e, in: ctx)
-                case let e as BullseyeEngine: BullseyeRenderer.draw(e, in: ctx)
-                case let e as EchoEngine: EchoRenderer.draw(e, in: ctx)
-                default: break
-                }
-            }
-            if engine.phase == .over {
-                ArcadeMiniPicker(session: session, engine: engine)
-                    .padding(10)
+        Canvas { ctx, size in
+            _ = revision
+            ctx.fit(CGSize(width: 640, height: 240), in: size)
+            switch engine.current {
+            case let e as FlapEngine: FlapRenderer.draw(e, in: ctx)
+            case let e as DodgeEngine: DodgeRenderer.draw(e, in: ctx)
+            case let e as BullseyeEngine: BullseyeRenderer.draw(e, in: ctx)
+            case let e as EchoEngine: EchoRenderer.draw(e, in: ctx)
+            default: break
             }
         }
     }

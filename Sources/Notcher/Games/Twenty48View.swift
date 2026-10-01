@@ -17,7 +17,7 @@ struct Twenty48View: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(
-            RadialGradient(colors: [Color(hex: 0xFF9F0A).opacity(0.1), .clear], center: .leading, startRadius: 10, endRadius: 360)
+            RadialGradient(colors: [Color(hex: 0xFF9F0A).opacity(0.12), .clear], center: UnitPoint(x: 0.36, y: 0.5), startRadius: 10, endRadius: 300)
         )
     }
 

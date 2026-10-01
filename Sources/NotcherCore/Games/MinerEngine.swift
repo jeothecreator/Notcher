@@ -180,7 +180,7 @@ public final class MinerEngine: EngineBase, GameEngine {
         guard amount > 0 else { return }
         popups.append(Popup(id: popupID, amount: amount, age: 0))
         popupID += 1
-        if popups.count > 8 { popups.removeFirst() }
+        if popups.count > 6 { popups.removeFirst() }
     }
 
     public func persist() {

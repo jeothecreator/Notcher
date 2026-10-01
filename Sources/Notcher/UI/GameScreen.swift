@@ -282,9 +282,13 @@ struct GameOverCard: View {
     let session: GameSession
 
     var body: some View {
-        let style = boardStyle(session.engine.boardKey)
+        let style = boardStyle(session.boardKey)
         let summary = session.summary
         VStack(spacing: 6) {
+            if let cabinet = session.engine as? ArcadeEngine {
+                ArcadeMiniPicker(session: session, engine: cabinet)
+                    .padding(.bottom, 8)
+            }
             headline(summary, colors: style.colors)
 
             if let summary {

@@ -186,6 +186,10 @@ enum PreviewRenderer {
             farm.plots[i] = FarmPlot(crop: entry.0, plantedAt: now.addingTimeInterval(-entry.1))
         }
         save.farm = farm
+        // Anything the seed data already earns counts as unlocked, so no toasts fire mid-shot.
+        for achievement in AchievementCatalog.newlyUnlocked(stats: save.stats, unlocked: Set(save.achievements.keys)) {
+            save.achievements[achievement.id] = now
+        }
         arcade.save = save
     }
 
@@ -219,22 +223,13 @@ enum PreviewRenderer {
     static func autopilotSnake(_ e: SnakeEngine, session: GameSession, apples: Int) {
         session.press(.right, isRepeat: false)
         var frames = 0
-        while e.phase == .playing && e.apples < apples && frames < 120 * 60 {
-            if e.stepProgress < 0.05 {
-                let head = e.body[0]
-                let a = e.arena
-                let occupied = Set(e.body.dropLast())
-                func safe(_ d: Direction) -> Bool {
-                    let n = GridPoint(head.x + d.delta.x, head.y + d.delta.y)
-                    return n.x >= a.minX && n.x <= a.maxX && n.y >= a.minY && n.y <= a.maxY && !occupied.contains(n)
-                }
-                var options: [Direction] = []
-                if e.apple.x > head.x { options.append(.right) }
-                if e.apple.x < head.x { options.append(.left) }
-                if e.apple.y > head.y { options.append(.down) }
-                if e.apple.y < head.y { options.append(.up) }
-                options += Direction.allCases
-                if let pick = options.first(where: { $0 != e.direction.opposite && safe($0) }), pick != e.direction {
+        var lastSteps = -1
+        while e.phase == .playing && e.apples < apples && frames < 120 * 90 {
+            // Decide once per grid step, right after the snake moved.
+            let stepID = e.body.count * 10_000 + e.body[0].x * 100 + e.body[0].y
+            if stepID != lastSteps {
+                lastSteps = stepID
+                if let pick = bestDirection(e), pick != e.direction {
                     session.press(GameKey.from(pick), isRepeat: false)
                 }
             }
@@ -243,6 +238,48 @@ enum PreviewRenderer {
         }
         // Stop between two cells for a smooth frame.
         for _ in 0..<6 where e.phase == .playing { session.tick(1.0 / 120) }
+    }
+
+    /// Greedy toward the apple, but never into a pocket smaller than the snake.
+    static func bestDirection(_ e: SnakeEngine) -> Direction? {
+        let head = e.body[0]
+        let a = e.arena
+        let blocked = Set(e.body.dropLast())
+        func inside(_ p: GridPoint) -> Bool { p.x >= a.minX && p.x <= a.maxX && p.y >= a.minY && p.y <= a.maxY }
+        func space(from start: GridPoint) -> Int {
+            var seen: Set<GridPoint> = [start]
+            var queue = [start]
+            var i = 0
+            while i < queue.count && seen.count < 400 {
+                let p = queue[i]
+                i += 1
+                for d in Direction.allCases {
+                    let n = GridPoint(p.x + d.delta.x, p.y + d.delta.y)
+                    if inside(n) && !blocked.contains(n) && !seen.contains(n) {
+                        seen.insert(n)
+                        queue.append(n)
+                    }
+                }
+            }
+            return seen.count
+        }
+        var best: (Direction, Int, Int)?
+        for d in Direction.allCases where d != e.direction.opposite {
+            let n = GridPoint(head.x + d.delta.x, head.y + d.delta.y)
+            guard inside(n), !blocked.contains(n) else { continue }
+            let room = space(from: n)
+            let distance = abs(n.x - e.apple.x) + abs(n.y - e.apple.y)
+            let roomy = room >= e.body.count + 4 ? 1 : 0
+            if let b = best {
+                let bRoomy = b.1 >= e.body.count + 4 ? 1 : 0
+                if roomy > bRoomy || (roomy == bRoomy && (roomy == 1 ? distance < b.2 : room > b.1)) {
+                    best = (d, room, distance)
+                }
+            } else {
+                best = (d, room, distance)
+            }
+        }
+        return best?.0
     }
 
     static func autopilotPong(_ e: PongEngine, session: GameSession, seconds: Double) {
@@ -340,7 +377,7 @@ enum PreviewRenderer {
             for _ in 0..<(120 * 6) where flap.phase == .playing {
                 let next = flap.pipes.first { $0.x + FlapEngine.pipeWidth > FlapEngine.birdX - 10 }
                 let target = next?.gapY ?? FlapEngine.height / 2
-                if flap.birdY > target + 6 && flap.velocity > -60 { session.press(.primary, isRepeat: false) }
+                if flap.birdY > target + 20 && flap.velocity > 0 { session.press(.primary, isRepeat: false) }
                 session.tick(1.0 / 120)
             }
         case let dodge as DodgeEngine:
