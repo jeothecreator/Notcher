@@ -510,7 +510,7 @@ enum SudokuRenderer {
     static let cell: CGFloat = 30
     static let boardOrigin = CGPoint(x: 185, y: 15)
     static let accent = Color(hex: 0x67E8F9)
-    static let padOrigin = CGPoint(x: 480, y: 64)
+    static let padOrigin = CGPoint(x: 480, y: 32)
     static let padKey = CGSize(width: 40, height: 38)
     static let padGap: CGFloat = 6
 

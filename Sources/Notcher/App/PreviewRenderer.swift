@@ -16,6 +16,7 @@ enum PreviewRenderer {
         seed(arcade)
 
         func shot(_ name: String) {
+            if case .game = arcade.mode { arcade.previewClearToasts() }
             render(name, arcade: arcade, to: folder)
         }
 
@@ -72,7 +73,7 @@ enum PreviewRenderer {
         shot("16-trails")
 
         let stack = arcade.previewSession(.stack, engine: StackEngine(seed: 11))
-        if let e = stack.engine as? StackEngine { autopilotStack(e, session: stack, pieces: 34) }
+        if let e = stack.engine as? StackEngine { autopilotStack(e, session: stack, pieces: 30) }
         shot("17-stack")
 
         let twenty48 = arcade.previewSession(.twenty48)
@@ -493,13 +494,24 @@ enum PreviewRenderer {
             }
             session.input.clear()
         case let hop as HopEngine:
-            session.press(.up, isRepeat: false)
-            for _ in 0..<6 {
-                for _ in 0..<40 { session.tick(1.0 / 120) }
-                guard hop.phase == .playing, hop.deathAt == nil, hop.frogRow > 5 else { break }
-                session.press(.up, isRepeat: false)
+            session.press(.primary, isRepeat: false)
+            var hops = 0
+            for _ in 0..<(120 * 8) where hop.phase == .playing && hop.deathAt == nil && hops < 5 {
+                // Hop up only when the lane ahead stays clear for a moment.
+                let row = hop.frogRow - 1
+                let lane = hop.lanes[row]
+                let clear = lane.movers.allSatisfy { m in
+                    let ahead = m.x + lane.speed * 0.25
+                    return hop.frogX + 14 < min(m.x, ahead) - 4 || hop.frogX - 14 > max(m.x, ahead) + m.width + 4
+                }
+                if clear {
+                    session.press(.up, isRepeat: false)
+                    hops += 1
+                    for _ in 0..<20 { session.tick(1.0 / 120) }
+                }
+                session.tick(1.0 / 120)
             }
-            for _ in 0..<8 { session.tick(1.0 / 120) }
+            for _ in 0..<6 { session.tick(1.0 / 120) }
         default:
             break
         }
@@ -659,8 +671,13 @@ extension PreviewRenderer {
         settle(session, seconds: 0.6)
     }
 
-    static func evaluate(_ board: [[Bool]]) -> Double {
-        let rows = board.count, cols = board.first?.count ?? 0
+    static func evaluate(_ full: [[Bool]]) -> Double {
+        // Clear completed lines first, the way the engine will.
+        let cols = full.first?.count ?? 0
+        let kept = full.filter { !$0.allSatisfy { $0 } }
+        let lines = full.count - kept.count
+        let board = Array(repeating: Array(repeating: false, count: cols), count: lines) + kept
+        let rows = board.count
         var heights = Array(repeating: 0, count: cols)
         var holes = 0
         for x in 0..<cols {
@@ -673,9 +690,8 @@ extension PreviewRenderer {
                 }
             }
         }
-        let lines = board.filter { $0.allSatisfy { $0 } }.count
         let bumpiness = zip(heights, heights.dropFirst()).map { abs($0 - $1) }.reduce(0, +)
-        return -0.51 * Double(heights.reduce(0, +)) + 0.76 * Double(lines) - 0.36 * Double(holes) * 2 - 0.18 * Double(bumpiness)
+        return -0.51 * Double(heights.reduce(0, +)) + 0.76 * Double(lines) - 0.36 * Double(holes) - 0.18 * Double(bumpiness)
     }
 
     static func autoplayGems(_ e: GemsEngine, session: GameSession, moves: Int) {
@@ -754,7 +770,7 @@ extension PreviewRenderer {
             if w == 5 { word = String(word.dropLast()) + "q" }
             for c in word {
                 session.press(.char(c), isRepeat: false)
-                for _ in 0..<12 { session.tick(1.0 / 120) }
+                for _ in 0..<15 { session.tick(1.0 / 120) }
             }
             session.press(.primary, isRepeat: false)
             for _ in 0..<10 { session.tick(1.0 / 120) }
@@ -765,9 +781,37 @@ extension PreviewRenderer {
         }
     }
 
+    /// Four in a row for `owner` anywhere on a 7×6 board.
+    static func fourWins(_ b: [Int], _ owner: Int) -> Bool {
+        let cols = FourEngine.columns, rows = FourEngine.rows
+        for r in 0..<rows {
+            for c in 0..<cols {
+                for (dc, dr) in [(1, 0), (0, 1), (1, 1), (1, -1)] {
+                    let cells = (0..<4).map { (c + dc * $0, r + dr * $0) }
+                    if cells.allSatisfy({ $0.0 >= 0 && $0.0 < cols && $0.1 >= 0 && $0.1 < rows && b[$0.1 * cols + $0.0] == owner }) { return true }
+                }
+            }
+        }
+        return false
+    }
+
+    /// Win if possible, block if needed, otherwise play near the centre.
+    static func fourPick(_ e: FourEngine, preferring order: [Int]) -> Int {
+        for owner in [1, 2] {
+            for c in 0..<FourEngine.columns {
+                guard let r = e.landingRow(c) else { continue }
+                var b = e.board
+                b[r * FourEngine.columns + c] = owner
+                if fourWins(b, owner) { return c }
+            }
+        }
+        return order.first { e.landingRow($0) != nil } ?? 3
+    }
+
     static func autoplayFour(_ e: FourEngine, session: GameSession) {
-        for column in [3, 2, 4, 4, 1] {
+        for preferred in [[3], [2, 4], [4, 2], [5, 1], [1, 5]] {
             guard e.phase != .over, e.result == nil else { break }
+            let column = fourPick(e, preferring: preferred + [3, 2, 4, 1, 5, 0, 6])
             e.choose(column: column)
             session.press(.primary, isRepeat: false)
             var guardCount = 0

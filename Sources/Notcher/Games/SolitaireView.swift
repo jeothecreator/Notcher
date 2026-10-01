@@ -274,18 +274,43 @@ struct CardView: View {
             .padding(.top, 4)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
-            Text(card.suit.symbol)
-                .font(.system(size: card.rank > 10 ? 26 : 30, weight: .bold))
-                .foregroundStyle(color.opacity(card.rank > 10 ? 0.9 : 0.85))
-                .offset(y: 8)
             if card.rank > 10 {
-                Text(card.rankLabel)
-                    .font(.system(size: 11, weight: .black, design: .rounded))
-                    .foregroundStyle(color.opacity(0.35))
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
-                    .padding(6)
+                court(color)
+            } else {
+                Text(card.suit.symbol)
+                    .font(.system(size: card.rank == 1 ? 38 : 30, weight: .bold))
+                    .foregroundStyle(color.opacity(card.rank == 1 ? 1 : 0.85))
+                    .shadow(color: card.rank == 1 ? color.opacity(0.35) : .clear, radius: 6, y: 2)
+                    .offset(y: 8)
             }
         }
+    }
+
+    /// Jack, queen and king get a framed portrait panel.
+    private func court(_ color: Color) -> some View {
+        let symbol: String
+        switch card.rank {
+        case 13: symbol = "crown.fill"
+        case 12: symbol = "crown"
+        default: symbol = "shield.lefthalf.filled"
+        }
+        let tint = card.isRed ? [Color(hex: 0xFFE6EB), Color(hex: 0xFFC7D2)] : [Color(hex: 0xE9EBF7), Color(hex: 0xC9CFEA)]
+        return ZStack {
+            RoundedRectangle(cornerRadius: 5, style: .continuous)
+                .fill(LinearGradient(colors: tint, startPoint: .top, endPoint: .bottom))
+            RoundedRectangle(cornerRadius: 5, style: .continuous)
+                .strokeBorder(color.opacity(0.3), lineWidth: 0.75)
+            VStack(spacing: 1) {
+                Image(systemName: symbol)
+                    .font(.system(size: 17, weight: .bold))
+                Text(card.suit.symbol)
+                    .font(.system(size: 13, weight: .bold))
+            }
+            .foregroundStyle(color)
+        }
+        .padding(.horizontal, 9)
+        .padding(.top, 24)
+        .padding(.bottom, 8)
     }
 
     private var back: some View {

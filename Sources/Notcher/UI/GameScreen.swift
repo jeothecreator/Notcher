@@ -400,9 +400,11 @@ struct GameOverCard: View {
     private func detail(_ summary: RunSummary) -> String {
         var parts: [String] = []
         if let extra = gameDetail { parts.append(extra) }
-        if let previous = summary.record.previousBest, !summary.record.isPersonalBest {
-            parts.append("Best \(Format.score(previous, board: summary.board))")
-        } else if summary.record.previousBest == nil {
+        if let previous = summary.record.previousBest {
+            parts.append(summary.record.isPersonalBest
+                ? "Previous best \(Format.score(previous, board: summary.board))"
+                : "Best \(Format.score(previous, board: summary.board))")
+        } else {
             parts.append("First record")
         }
         return parts.joined(separator: " · ")
@@ -425,6 +427,10 @@ struct GameOverCard: View {
             return "Wave \(e.wave)"
         case let e as TrailsEngine:
             return "Round \(e.round)"
+        case let e as SnakeEngine:
+            return "Length \(e.body.count)"
+        case let e as BreakoutEngine:
+            return "Level \(e.level)"
         default:
             return nil
         }

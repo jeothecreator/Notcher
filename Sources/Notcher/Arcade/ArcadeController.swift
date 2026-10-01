@@ -864,6 +864,14 @@ final class ArcadeController {
         return session
     }
 
+    /// Drops toasts raised while an autopilot played, so game shots stay clean.
+    func previewClearToasts() {
+        toastTask?.cancel()
+        toastTask = nil
+        toastQueue.removeAll()
+        toast = nil
+    }
+
     func isPaused(_ game: GameID) -> Bool {
         sessions[game.rawValue]?.phase == .paused
     }

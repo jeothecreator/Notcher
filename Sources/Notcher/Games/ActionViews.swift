@@ -75,7 +75,7 @@ enum InvadersRenderer {
 
         // Ground
         ctx.glow(bunkerColor.opacity(0.6), radius: 4) { layer in
-            layer.fill(Path(CGRect(x: 0, y: 231, width: w, height: 1)), with: .color(bunkerColor.opacity(0.55)))
+            layer.fill(Path(CGRect(x: 0, y: 228, width: w, height: 1)), with: .color(bunkerColor.opacity(0.55)))
         }
 
         // Bunkers
@@ -169,11 +169,11 @@ enum InvadersRenderer {
         for i in 0..<max(0, e.lives - 1) {
             let x = 14 + Double(i) * 20
             var mini = Path()
-            mini.addRoundedRect(in: CGRect(x: x, y: 236, width: 14, height: 3), cornerSize: CGSize(width: 1, height: 1))
+            mini.addRoundedRect(in: CGRect(x: x, y: 233, width: 14, height: 3), cornerSize: CGSize(width: 1, height: 1))
             ctx.fill(mini, with: .color(player[0].opacity(0.55)))
         }
-        let wave = Text("WAVE \(e.wave)").font(.system(size: 8.5, weight: .heavy, design: .rounded)).foregroundStyle(Color.white.opacity(0.3))
-        ctx.draw(wave, at: CGPoint(x: w - 10, y: 239), anchor: .bottomTrailing)
+        let wave = Text("WAVE \(e.wave)").font(.system(size: 7.5, weight: .heavy, design: .rounded)).foregroundStyle(Color.white.opacity(0.3))
+        ctx.draw(wave, at: CGPoint(x: w - 10, y: 234.5), anchor: .trailing)
 
         if let banner = e.waveBanner, e.phase == .playing, t - banner < 1.6 {
             let a = min(1, (1.6 - (t - banner)) * 2)
@@ -219,12 +219,16 @@ enum AstroRenderer {
 
         // Rocks, drawn again across the edges they straddle.
         var rocks = Path()
+        var craters = Path()
         for rock in e.rocks {
             for offset in wrapOffsets(rock.position, radius: rock.radius * 1.1, w: w, h: h) {
-                rocks.addPath(rockPath(rock, at: CGPoint(x: rock.position.x + offset.x, y: rock.position.y + offset.y)))
+                let at = CGPoint(x: rock.position.x + offset.x, y: rock.position.y + offset.y)
+                rocks.addPath(rockPath(rock, at: at))
+                craters.addPath(craterPath(rock, at: at))
             }
         }
         ctx.fill(rocks, with: .color(Color(hex: 0x0B0D1A)))
+        ctx.stroke(craters, with: .color(line.opacity(0.28)), style: StrokeStyle(lineWidth: 1, lineCap: .round))
         ctx.glow(accent.opacity(0.8), radius: 6) { layer in
             layer.stroke(rocks, with: .color(line.opacity(0.9)), style: StrokeStyle(lineWidth: 1.4, lineJoin: .round))
         }
@@ -305,12 +309,17 @@ enum AstroRenderer {
             if i == 0 { p.move(to: pt) } else { p.addLine(to: pt) }
         }
         p.closeSubpath()
-        // A crater or two on big rocks for depth.
-        if rock.size >= 2 {
-            let r = rock.radius * 0.22
-            let a = rock.angle * 0.7
-            p.addEllipse(in: CGRect(x: c.x + cos(a) * rock.radius * 0.35 - r, y: c.y + sin(a) * rock.radius * 0.35 - r, width: r * 2, height: r * 2))
-        }
+        return p
+    }
+
+    /// A shallow crater on bigger rocks, drawn faintly for depth.
+    static func craterPath(_ rock: AstroEngine.Rock, at c: CGPoint) -> Path {
+        var p = Path()
+        guard rock.size >= 2 else { return p }
+        let r = rock.radius * 0.16
+        let a = rock.angle * 0.7
+        let cx = c.x + cos(a) * rock.radius * 0.38, cy = c.y + sin(a) * rock.radius * 0.38
+        p.addArc(center: CGPoint(x: cx, y: cy), radius: r, startAngle: .radians(a + 0.6), endAngle: .radians(a + 3.6), clockwise: false)
         return p
     }
 
