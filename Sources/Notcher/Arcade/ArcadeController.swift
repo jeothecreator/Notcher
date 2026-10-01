@@ -669,9 +669,10 @@ final class ArcadeController {
 
     // MARK: - Preview rendering hooks
 
-    func previewState(mode: NotchMode, hovered: LauncherItem? = nil, focused: Bool = false, toast: Toast? = nil) {
+    func previewState(mode: NotchMode, hovered: LauncherItem? = nil, charging: LauncherItem? = nil, focused: Bool = false, toast: Toast? = nil) {
         self.mode = mode
         self.hovered = hovered
+        self.charging = charging
         self.isFocused = focused
         self.toast = toast
         if let hovered { selection = hovered }

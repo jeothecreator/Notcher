@@ -22,7 +22,7 @@ enum PreviewRenderer {
         arcade.previewState(mode: .closed)
         shot("01-closed")
 
-        arcade.previewState(mode: .launcher, hovered: .game(.snake))
+        arcade.previewState(mode: .launcher, hovered: .game(.snake), charging: .game(.snake))
         shot("02-launcher")
 
         arcade.previewState(mode: .closed, toast: Toast(symbol: "crown.fill", title: "Snake God", subtitle: "Achievement unlocked", colors: GameID.snake.style.colors))
@@ -92,12 +92,11 @@ enum PreviewRenderer {
         }
 
         // A finished run with a new personal best.
-        let over = arcade.previewSession(.runner)
-        if let e = over.engine as? RunnerEngine {
-            autopilotRunner(e, session: over, seconds: 9)
-            e.handle(.restart, isRepeat: false)
-            e.handle(.primary, isRepeat: false)
-            for _ in 0..<2400 where e.phase != .over { over.tick(1.0 / 120) }
+        let over = arcade.previewSession(.snake)
+        if let e = over.engine as? SnakeEngine {
+            autopilotSnake(e, session: over, apples: 42)
+            // Then stop steering and let it hit the wall.
+            for _ in 0..<(120 * 20) where e.phase == .playing { over.tick(1.0 / 120) }
             settle(over, seconds: 0.8)
         }
         shot("30-game-over")

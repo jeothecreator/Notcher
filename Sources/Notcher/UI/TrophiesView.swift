@@ -100,8 +100,12 @@ struct LeaderboardsPane: View {
                         boardRow(key)
                     }
                 }
+                .padding(.bottom, 18)
             }
             .frame(width: 176)
+            .mask(
+                LinearGradient(stops: [.init(color: .black, location: 0), .init(color: .black, location: 0.86), .init(color: .clear, location: 1)], startPoint: .top, endPoint: .bottom)
+            )
 
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 5) {

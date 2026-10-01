@@ -158,6 +158,7 @@ struct GameTile: View {
     let game: GameID
     let arcade: ArcadeController
     @State private var charge: CGFloat = 0
+    @Environment(\.previewRendering) private var previewRendering
 
     private var isHovered: Bool { arcade.hovered == .game(game) }
     private var isSelected: Bool { arcade.isFocused && arcade.selection == .game(game) && arcade.hovered == nil }
@@ -175,7 +176,7 @@ struct GameTile: View {
                 RoundedRectangle(cornerRadius: 17, style: .continuous)
                     .strokeBorder(active ? style.accent.opacity(0.55) : Theme.stroke, lineWidth: active ? 1 : 0.75)
                 RoundedRectangle(cornerRadius: 17, style: .continuous)
-                    .trim(from: 0, to: charge)
+                    .trim(from: 0, to: previewRendering && isCharging ? 0.62 : charge)
                     .stroke(style.gradient, style: StrokeStyle(lineWidth: 2.2, lineCap: .round))
                     .shadow(color: style.accent.opacity(0.8), radius: 4)
 

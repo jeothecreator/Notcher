@@ -66,6 +66,7 @@ struct NotchRootView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .coordinateSpace(.named("panel"))
+        .focusEffectDisabled()
         .onPreferenceChange(ItemFramesKey.self) { frames in
             arcade.itemFrames = frames
         }

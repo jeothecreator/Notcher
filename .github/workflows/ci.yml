@@ -51,8 +51,8 @@ jobs:
           mkdir -p /tmp/previews
           for f in build/previews/*.png; do
             name="$(basename "$f" .png)"
-            sips -Z 1000 -s format jpeg -s formatOptions 72 "$f" --out "/tmp/previews/$name.jpg" >/dev/null
+            sips -Z 1100 -s format jpeg -s formatOptions 80 "$f" --out "/tmp/previews/$name.jpg" >/dev/null
             echo "=====BEGIN $name"
-            base64 -b 76 -i "/tmp/previews/$name.jpg"
+            base64 -b 16000 -i "/tmp/previews/$name.jpg"
             echo "=====END $name"
           done
