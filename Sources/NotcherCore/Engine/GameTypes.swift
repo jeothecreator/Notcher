@@ -20,8 +20,12 @@ public enum GameKey: Hashable, Sendable {
     case auto
     /// P
     case pause
-    /// 1…9
+    /// 0…9
     case number(Int)
+    /// Delete / Backspace
+    case backspace
+    /// A typed letter, only sent to engines that accept text.
+    case char(Character)
 
     public var isArrow: Bool {
         switch self {
@@ -47,6 +51,7 @@ public enum SoundCue: String, CaseIterable, Sendable {
     case merge, slide, flag, reveal, explode, lose, win, levelUp, powerUp
     case error, ready, go, card, place, harvest, plant, buy, flap
     case note1, note2, note3, note4
+    case march, laser, thrust, key, drop
 }
 
 public enum GameEvent: Equatable, Sendable {
@@ -92,6 +97,8 @@ public protocol GameEngine: AnyObject {
     var clock: Double { get }
     /// Screen shake 0…1, decays on its own.
     var shake: Double { get }
+    /// True when letters should arrive as `.char` instead of shortcuts.
+    var acceptsText: Bool { get }
 
     func tick(_ dt: Double, input: InputState)
     /// Returns true when the key did something.
@@ -109,6 +116,7 @@ public class EngineBase {
     public internal(set) var clock: Double = 0
     public internal(set) var shake: Double = 0
     public var boardKey: String
+    public var acceptsText: Bool { false }
     var events: [GameEvent] = []
 
     init(boardKey: String) {

@@ -114,10 +114,62 @@ public enum AchievementCatalog {
                     }),
         Achievement("arcade.flap", "Frequent Flyer", "Score 20 in Flap.", symbol: "bird.fill", game: .arcade,
                     measure: atLeast("score.arcade.flap", 20, in: \.maxima)),
+        // Invaders
+        Achievement("invaders.wave", "Hold the Line", "Reach wave 3 in Invaders.", symbol: "shield.lefthalf.filled", game: .invaders,
+                    measure: atLeast("invaders.wave", 3, in: \.maxima)),
+        Achievement("invaders.saucer", "Close Encounter", "Shoot down the mystery saucer.", symbol: "dot.radiowaves.left.and.right", game: .invaders,
+                    measure: atLeast("invaders.saucers", 1)),
+        // Astro
+        Achievement("astro.rocks", "Rock Breaker", "Destroy 100 space rocks.", symbol: "circle.hexagongrid.fill", game: .astro,
+                    measure: atLeast("astro.rocks", 100)),
+        Achievement("astro.score", "Space Ace", "Score 5,000 in Astro.", symbol: "airplane", game: .astro,
+                    measure: atLeast("score.astro", 5_000, in: \.maxima)),
+        // Trails
+        Achievement("trails.round", "Last Rider", "Win a round of Trails.", symbol: "point.topleft.down.to.point.bottomright.curvepath.fill", game: .trails,
+                    measure: atLeast("trails.rounds", 1)),
+        Achievement("trails.legend", "Grid Legend", "Reach round 5 in Trails.", symbol: "square.grid.3x3.topleft.filled", game: .trails,
+                    measure: atLeast("trails.round", 5, in: \.maxima)),
+        // Stack
+        Achievement("stack.lines", "Line Up", "Clear 40 lines in Stack.", symbol: "line.3.horizontal", game: .stack,
+                    measure: atLeast("stack.lines", 40)),
+        Achievement("stack.four", "Four at Once", "Clear four lines with one piece.", symbol: "square.stack.3d.up.fill", game: .stack,
+                    measure: atLeast("stack.tetrises", 1)),
+        // Gems
+        Achievement("gems.cascade", "Chain Reaction", "Set off a four-step cascade.", symbol: "sparkles", game: .gems,
+                    measure: atLeast("gems.cascade", 4, in: \.maxima)),
+        Achievement("gems.score", "Jeweler", "Score 3,000 in Gems.", symbol: "rhombus.fill", game: .gems,
+                    measure: atLeast("score.gems", 3_000, in: \.maxima)),
+        // Sudoku
+        Achievement("sudoku.win", "Solved", "Solve a Sudoku.", symbol: "checkmark.square.fill", game: .sudoku,
+                    measure: atLeast("sudoku.wins", 1)),
+        Achievement("sudoku.flawless", "Clean Sheet", "Solve a Sudoku without a mistake.", symbol: "checkmark.seal.fill", game: .sudoku,
+                    measure: atLeast("sudoku.flawless", 1)),
+        Achievement("sudoku.hard", "Hard Boiled", "Solve a hard Sudoku.", symbol: "flame.fill", game: .sudoku,
+                    measure: atMost("sudoku.hard", Int.max)),
+        // Lexi
+        Achievement("lexi.win", "Wordsmith", "Solve a Lexi puzzle.", symbol: "textformat.abc", game: .lexi,
+                    measure: atLeast("lexi.wins", 1)),
+        Achievement("lexi.genius", "Genius", "Solve Lexi in two guesses.", symbol: "lightbulb.fill", game: .lexi,
+                    measure: atLeast("lexi.best", 500, in: \.maxima)),
+        // Typer
+        Achievement("typer.60", "Swift Fingers", "Type 60 words per minute.", symbol: "keyboard.fill", game: .typer,
+                    measure: atLeast("typer.wpm", 60, in: \.maxima)),
+        Achievement("typer.90", "Keyboard Warrior", "Type 90 words per minute.", symbol: "bolt.fill", game: .typer,
+                    measure: atLeast("typer.wpm", 90, in: \.maxima)),
+        // Four
+        Achievement("four.win", "Connected", "Beat the AI at Four.", symbol: "circle.grid.3x3.fill", game: .four,
+                    measure: atLeast("four.wins", 1)),
+        Achievement("four.level", "Grandmaster", "Reach level 5 in Four.", symbol: "crown.fill", game: .four,
+                    measure: atLeast("four.level", 5, in: \.maxima)),
+        // Arcade cabinet additions
+        Achievement("arcade.lander", "Smooth Landing", "Land three times in one Lander run.", symbol: "arrow.down.to.line", game: .arcade,
+                    measure: atLeast("arcade.lander.landings", 3, in: \.maxima)),
+        Achievement("arcade.hop", "Across the River", "Fill all five bays in Hop.", symbol: "tortoise.fill", game: .arcade,
+                    measure: atLeast("arcade.hop.level", 2, in: \.maxima)),
         // General
         Achievement("general.speedrunner", "Speedrunner", "Launch 10 games.", symbol: "paperplane.fill", game: nil,
                     measure: { ($0.gameLaunches, 10) }),
-        Achievement("general.tourist", "Tourist", "Play all 11 games.", symbol: "globe.americas.fill", game: nil,
+        Achievement("general.tourist", "Tourist", "Play all 20 games.", symbol: "globe.americas.fill", game: nil,
                     measure: { stats in (GameID.allCases.filter { (stats.plays[$0.rawValue] ?? 0) > 0 }.count, GameID.allCases.count) }),
         Achievement("general.rat", "Arcade Rat", "Play 100 games.", symbol: "gamecontroller.fill", game: nil,
                     measure: { ($0.gamesPlayed, 100) }),

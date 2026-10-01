@@ -220,8 +220,9 @@ final class SaveTests: XCTestCase {
 }
 
 final class CatalogTests: XCTestCase {
-    func testElevenGames() {
-        XCTAssertEqual(GameID.allCases.count, 11)
+    func testTwentyGames() {
+        XCTAssertEqual(GameID.allCases.count, 20)
+        XCTAssertEqual(Set(GameID.allCases.map(\.title)).count, 20)
         for category in GameCategory.allCases {
             XCTAssertFalse(GameID.inCategory(category).isEmpty)
         }
@@ -233,7 +234,7 @@ final class CatalogTests: XCTestCase {
         var cal = Calendar(identifier: .gregorian)
         cal.timeZone = TimeZone(identifier: "UTC")!
         let day = Date(timeIntervalSince1970: 1_790_000_000)
-        let minis = (0..<4).map { ArcadeMini.featured(on: day.addingTimeInterval(86_400 * Double($0)), calendar: cal) }
-        XCTAssertEqual(Set(minis).count, 4)
+        let minis = (0..<6).map { ArcadeMini.featured(on: day.addingTimeInterval(86_400 * Double($0)), calendar: cal) }
+        XCTAssertEqual(Set(minis).count, 6)
     }
 }
