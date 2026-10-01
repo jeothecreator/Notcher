@@ -290,7 +290,8 @@ final class NESPPU {
                         loadShifters()
                         nextTile = vram[nametableIndex(0x2000 | (v & 0x0FFF))]
                     case 2:
-                        let addr = 0x23C0 | (v & 0x0C00) | ((v >> 4) & 0x38) | ((v >> 2) & 0x07)
+                        let coarse: UInt16 = ((v >> 4) & 0x38) | ((v >> 2) & 0x07)
+                        let addr: UInt16 = 0x23C0 | (v & 0x0C00) | coarse
                         var at = vram[nametableIndex(addr)]
                         if (v >> 5) & 0x02 != 0 { at >>= 4 }
                         if v & 0x02 != 0 { at >>= 2 }

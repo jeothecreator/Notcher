@@ -15,8 +15,18 @@ final class NESAPU {
     static let noisePeriods: [Int] = [4, 8, 16, 32, 64, 96, 128, 160, 202, 254, 380, 508, 762, 1016, 2034, 4068]
     static let dmcRates: [Int] = [428, 380, 340, 320, 286, 254, 226, 214, 190, 160, 142, 128, 106, 84, 72, 54]
 
-    static let pulseMix: [Double] = (0..<31).map { $0 == 0 ? 0 : 95.52 / (8128.0 / Double($0) + 100) }
-    static let tndMix: [Double] = (0..<203).map { $0 == 0 ? 0 : 163.67 / (24329.0 / Double($0) + 100) }
+    static let pulseMix: [Double] = mixTable(count: 31, numerator: 95.52, divisor: 8128)
+    static let tndMix: [Double] = mixTable(count: 203, numerator: 163.67, divisor: 24329)
+
+    /// The 2A03's non-linear DAC: n / (d / x + 100), with 0 for silence.
+    static func mixTable(count: Int, numerator: Double, divisor: Double) -> [Double] {
+        var table = [Double](repeating: 0, count: count)
+        for i in 1..<count {
+            let x = Double(i)
+            table[i] = numerator / (divisor / x + 100)
+        }
+        return table
+    }
 
     struct Envelope {
         var start = false

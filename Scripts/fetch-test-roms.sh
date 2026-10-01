@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Downloads public emulator conformance ROMs (Blargg's tests, nestest and the
-# acid2 PPU tests) into Tests/NotcherCoreTests/External. They are only used by
+# acid2 PPU tests) into Tests/External. They are only used by
 # the test suite and preview renders, never shipped.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-DEST=Tests/NotcherCoreTests/External
+DEST=Tests/External
 mkdir -p "$DEST/gb" "$DEST/nes"
 
 fetch() {

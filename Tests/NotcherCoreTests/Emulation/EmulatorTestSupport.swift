@@ -120,8 +120,9 @@ enum TestROM {
 enum ExternalROMs {
     static var directory: URL {
         URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
+            .deletingLastPathComponent() // Emulation
+            .deletingLastPathComponent() // NotcherCoreTests
+            .deletingLastPathComponent() // Tests
             .appendingPathComponent("External")
     }
 
