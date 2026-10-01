@@ -133,7 +133,7 @@ struct GameScreen: View {
                     .transition(.opacity.combined(with: .scale(scale: 0.96)))
             }
         case .paused:
-            PausedCard()
+            PausedCard(textInput: session.engine.acceptsText)
                 .transition(.opacity.combined(with: .scale(scale: 0.96)))
         case .over:
             if showsOverCard {
@@ -171,7 +171,7 @@ struct GameScreen: View {
         HStack(spacing: 12) {
             HintRow(hints: session.game.controls)
             Spacer(minLength: 8)
-            if session.phase == .playing && session.game.category != .idle {
+            if session.phase == .playing && session.game.category != .idle && !session.engine.acceptsText {
                 HintLabel(keys: "P", action: "pause")
             }
             HintLabel(keys: "esc", action: "back to work")
@@ -307,6 +307,9 @@ private struct CountingText: View, Animatable {
 }
 
 struct PausedCard: View {
+    /// Letters type in word games, so R isn't a shortcut there.
+    var textInput = false
+
     var body: some View {
         VStack(spacing: 10) {
             Image(systemName: "pause.fill")
@@ -316,8 +319,8 @@ struct PausedCard: View {
                 .font(Theme.rounded(18, .heavy))
                 .foregroundStyle(Theme.primary)
             HStack(spacing: 14) {
-                HintLabel(keys: "space", action: "resume")
-                HintLabel(keys: "R", action: "restart")
+                HintLabel(keys: textInput ? "any key" : "space", action: "resume")
+                if !textInput { HintLabel(keys: "R", action: "restart") }
                 HintLabel(keys: "esc", action: "back to work")
             }
         }

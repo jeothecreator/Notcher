@@ -105,9 +105,11 @@ public final class AstroEngine: EngineBase, GameEngine {
         let a = rng.double(0...(2 * Double.pi))
         let boost = 1 + Double(wave - 1) * 0.07
         let outline = (0..<11).map { _ in rng.double(0.72...1.08) }
+        let heading: Vec2 = Vec2(cos(a), sin(a))
+        let velocity: Vec2 = heading * (speed * boost)
         defer { nextRockID += 1 }
         return Rock(
-            id: nextRockID, position: p, velocity: Vec2(cos(a), sin(a)) * (speed * boost), size: size,
+            id: nextRockID, position: p, velocity: velocity, size: size,
             angle: rng.double(0...6), spin: rng.double(-1.2...1.2), outline: outline
         )
     }
