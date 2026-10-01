@@ -276,7 +276,7 @@ final class NESConformanceTests: XCTestCase {
                 let radix = key == "CYC" ? 10 : 16
                 if let value = Int(parts[1], radix: radix) { fields[key] = value }
             }
-            let cpu = nes.cpu!
+            let cpu = nes.cpu
             let actual = String(
                 format: "%04X A:%02X X:%02X Y:%02X P:%02X SP:%02X CYC:%d",
                 cpu.pc, cpu.a, cpu.x, cpu.y, cpu.p, cpu.s, cpu.cycles

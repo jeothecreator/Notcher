@@ -76,10 +76,11 @@ struct ConsoleScreen: View {
                         .foregroundStyle(Theme.tertiary)
                         .help("This cartridge saves to battery; Notcher keeps it for you")
                 }
-                Text(session.system.title.uppercased())
-                    .font(Theme.rounded(9.5, .heavy))
-                    .tracking(1)
-                    .foregroundStyle(Theme.tertiary)
+                if session.entry.playSeconds >= 60 {
+                    Text(Format.playTime(seconds: session.entry.playSeconds) + " played")
+                        .font(Theme.mono(10, .bold))
+                        .foregroundStyle(Theme.tertiary)
+                }
             }
         }
     }
@@ -118,7 +119,7 @@ struct ConsoleScreen: View {
     @ViewBuilder private var overlay: some View {
         if session.paused {
             ZStack {
-                Color.black.opacity(0.62)
+                Color.black.opacity(0.5)
                 ConsolePausedCard(session: session)
             }
             .transition(.opacity)
@@ -457,6 +458,16 @@ struct ConsolePausedCard: View {
             }
             .padding(.top, 4)
         }
-        .padding(20)
+        .padding(.horizontal, 24)
+        .padding(.vertical, 18)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color(hex: 0x0C0C10).opacity(0.92))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .strokeBorder(Color.white.opacity(0.1), lineWidth: 0.75)
+        )
+        .shadow(color: .black.opacity(0.5), radius: 16, y: 6)
     }
 }

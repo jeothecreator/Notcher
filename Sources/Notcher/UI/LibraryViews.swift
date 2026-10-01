@@ -182,7 +182,10 @@ struct RomTile: View {
                         .rotationEffect(.degrees(-12))
                         .offset(x: size.width - 52, y: -size.height + 56)
                 }
-                LinearGradient(colors: [.clear, .black.opacity(0.88)], startPoint: .center, endPoint: .bottom)
+                LinearGradient(
+                    stops: [.init(color: .black.opacity(0.15), location: 0), .init(color: .black.opacity(0.35), location: 0.35), .init(color: .black.opacity(0.92), location: 0.8)],
+                    startPoint: .top, endPoint: .bottom
+                )
                 VStack(alignment: .leading, spacing: 1) {
                     HStack(spacing: 4) {
                         SystemBadge(system: system)

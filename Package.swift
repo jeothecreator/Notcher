@@ -8,7 +8,12 @@ import PackageDescription
 var targets: [Target] = [
     .target(
         name: "NotcherCore",
-        path: "Sources/NotcherCore"
+        path: "Sources/NotcherCore",
+        swiftSettings: [
+            // The emulators touch class fields millions of times a second;
+            // runtime exclusivity checks would cost a large share of a frame.
+            .unsafeFlags(["-enforce-exclusivity=unchecked"], .when(configuration: .release)),
+        ]
     ),
     .testTarget(
         name: "NotcherCoreTests",

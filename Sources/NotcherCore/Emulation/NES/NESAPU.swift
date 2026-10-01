@@ -200,8 +200,14 @@ final class NESAPU {
         var irq = false
     }
 
-    unowned(unsafe) let bus: NES
+    unowned(unsafe) var bus: NES!
     let audio: AudioResampler
+    /// The mixer tables, copied out of the static arrays for the hot path.
+    private let pulseTable: UnsafeMutablePointer<Double>
+    private let tndTable: UnsafeMutablePointer<Double>
+    /// Output level runs: the resampler gets one call per change, not per cycle.
+    private var pendingLevel: Double = 0
+    private var pendingCount = 0
 
     var pulse1 = Pulse(ones: true)
     var pulse2 = Pulse(ones: false)
@@ -215,9 +221,25 @@ final class NESAPU {
     var frameCycle = 0
     var evenCycle = false
 
-    init(bus: NES, audio: AudioResampler) {
-        self.bus = bus
+    init(audio: AudioResampler) {
         self.audio = audio
+        pulseTable = .allocate(capacity: NESAPU.pulseMix.count)
+        pulseTable.initialize(from: NESAPU.pulseMix, count: NESAPU.pulseMix.count)
+        tndTable = .allocate(capacity: NESAPU.tndMix.count)
+        tndTable.initialize(from: NESAPU.tndMix, count: NESAPU.tndMix.count)
+    }
+
+    deinit {
+        pulseTable.deallocate()
+        tndTable.deallocate()
+    }
+
+    /// Hands any buffered output to the resampler.
+    func flushAudio() {
+        if pendingCount > 0 {
+            audio.push(pendingLevel * 1.4, count: pendingCount)
+            pendingCount = 0
+        }
     }
 
     var irq: Bool { frameIRQ || dmc.irq }
@@ -238,8 +260,14 @@ final class NESAPU {
 
         let p = Int(pulse1.output) + Int(pulse2.output)
         let tnd = 3 * Int(triangle.output) + 2 * Int(noise.output) + Int(dmc.output)
-        let level = NESAPU.pulseMix[p] + NESAPU.tndMix[min(tnd, 202)]
-        audio.push(level * 1.4, count: 1)
+        let level = pulseTable[p] + tndTable[min(tnd, 202)]
+        if level == pendingLevel {
+            pendingCount += 1
+        } else {
+            flushAudio()
+            pendingLevel = level
+            pendingCount = 1
+        }
     }
 
     private func stepFrameCounter() {

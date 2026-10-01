@@ -7,7 +7,7 @@ final class NESPPU {
     static let width = 256
     static let height = 240
 
-    unowned(unsafe) let bus: NES
+    unowned(unsafe) var bus: NES!
 
     var ctrl: UInt8 = 0
     var mask: UInt8 = 0
@@ -40,18 +40,39 @@ final class NESPPU {
     var shiftAttributeLow: UInt16 = 0
     var shiftAttributeHigh: UInt16 = 0
 
-    // Sprites for the line being drawn.
+    // Sprites for the line being drawn. Raw buffers keep the per-pixel
+    // loop free of array bookkeeping.
     var spriteCount = 0
-    var spriteX = [Int](repeating: 0, count: 8)
-    var spriteAttr = [UInt8](repeating: 0, count: 8)
-    var spriteLow = [UInt8](repeating: 0, count: 8)
-    var spriteHigh = [UInt8](repeating: 0, count: 8)
+    let spriteX = UnsafeMutablePointer<Int>.allocate(capacity: 8)
+    let spriteAttr = UnsafeMutablePointer<UInt8>.allocate(capacity: 8)
+    let spriteLow = UnsafeMutablePointer<UInt8>.allocate(capacity: 8)
+    let spriteHigh = UnsafeMutablePointer<UInt8>.allocate(capacity: 8)
     var spriteZeroOnLine = false
 
-    var frame = [UInt32](repeating: 0xFF00_0000, count: 256 * 240)
+    let frame = UnsafeMutablePointer<UInt32>.allocate(capacity: 256 * 240)
+    private let colorTable = UnsafeMutablePointer<UInt32>.allocate(capacity: 64)
 
-    init(bus: NES) {
-        self.bus = bus
+    init() {
+        spriteX.initialize(repeating: 0, count: 8)
+        spriteAttr.initialize(repeating: 0, count: 8)
+        spriteLow.initialize(repeating: 0, count: 8)
+        spriteHigh.initialize(repeating: 0, count: 8)
+        frame.initialize(repeating: 0xFF00_0000, count: 256 * 240)
+        colorTable.initialize(from: NESPPU.colors, count: 64)
+    }
+
+    deinit {
+        spriteX.deallocate()
+        spriteAttr.deallocate()
+        spriteLow.deallocate()
+        spriteHigh.deallocate()
+        frame.deallocate()
+        colorTable.deallocate()
+    }
+
+    /// A copy of the finished picture.
+    var frameArray: [UInt32] {
+        Array(UnsafeBufferPointer(start: frame, count: 256 * 240))
     }
 
     var renderingEnabled: Bool { mask & 0x18 != 0 }
@@ -398,7 +419,7 @@ final class NESPPU {
         }
         var color = palette[paletteIndex(UInt16(index))]
         if mask & 0x01 != 0 { color &= 0x30 }
-        frame[scanline * 256 + x] = NESPPU.colors[Int(color & 0x3F)]
+        frame[scanline * 256 + x] = colorTable[Int(color & 0x3F)]
     }
 
     static let colors: [UInt32] = ([

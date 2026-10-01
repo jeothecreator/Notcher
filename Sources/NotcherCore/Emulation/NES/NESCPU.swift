@@ -4,7 +4,8 @@ import Foundation
 /// accesses included, takes one CPU cycle and advances the PPU and APU, so
 /// cycle counts match the hardware exactly.
 final class NESCPU {
-    unowned(unsafe) let bus: NES
+    /// Set by `NES` right after creating its parts; never retained.
+    unowned(unsafe) var bus: NES!
 
     var a: UInt8 = 0
     var x: UInt8 = 0
@@ -26,9 +27,7 @@ final class NESCPU {
     static let overflow: UInt8 = 0x40
     static let negative: UInt8 = 0x80
 
-    init(bus: NES) {
-        self.bus = bus
-    }
+    init() {}
 
     // MARK: Bus
 

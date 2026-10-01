@@ -6,16 +6,18 @@ public final class NES: Emulator {
     public let screenWidth = NESPPU.width
     public let screenHeight = NESPPU.height
     public let frameRate = 60.0988
-    public let audio = AudioResampler(inputRate: 1_789_773)
+    public let audio: AudioResampler
     public var buttons: ConsoleButtons = []
 
-    public var frameBuffer: [UInt32] { ppu.frame }
+    public var frameBuffer: [UInt32] { ppu.frameArray }
 
     let cart: NESCartridge
-    private(set) var cpu: NESCPU!
-    private(set) var ppu: NESPPU!
-    private(set) var apu: NESAPU!
+    // Constants, so the hot path never retains or unwraps them.
+    let cpu: NESCPU
+    let ppu: NESPPU
+    let apu: NESAPU
     let ram = ByteBuffer(count: 0x800)
+    private let image: [UInt8]
 
     var controllerShift: UInt8 = 0
     var strobe = false
@@ -23,22 +25,27 @@ public final class NES: Emulator {
 
     public init(rom: [UInt8]) throws {
         cart = try NESCartridge(rom: rom)
-        cpu = NESCPU(bus: self)
-        ppu = NESPPU(bus: self)
-        apu = NESAPU(bus: self, audio: audio)
+        image = rom
+        let resampler = AudioResampler(inputRate: 1_789_773)
+        audio = resampler
+        cpu = NESCPU()
+        ppu = NESPPU()
+        apu = NESAPU(audio: resampler)
+        cpu.bus = self
+        ppu.bus = self
+        apu.bus = self
         cpu.reset()
     }
 
+    /// Like pressing Reset after power-on: everything returns to its starting
+    /// state except the cartridge's work RAM (where battery saves live).
     public func reset() {
-        cart.resetBanks()
-        cpu = NESCPU(bus: self)
-        ppu = NESPPU(bus: self)
-        apu = NESAPU(bus: self, audio: audio)
-        ram.fill(0)
-        controllerShift = 0
-        strobe = false
+        let workRAM = cart.prgRAM.array
+        if let fresh = try? NES(rom: image) {
+            try? restore(fresh.saveState())
+        }
+        cart.prgRAM.load(workRAM)
         audio.clear()
-        cpu.reset()
     }
 
     var irqLine: Bool { apu.irq || cart.irq }
@@ -52,10 +59,13 @@ public final class NES: Emulator {
         while !ppu.frameComplete && cpu.cycles < limit {
             cpu.step()
         }
+        apu.flushAudio()
     }
 
-    /// One CPU cycle of PPU and APU time.
-    @inline(__always) func tick() {
+    /// One CPU cycle of PPU and APU time. Kept out of line on purpose: the
+    /// CPU calls it from hundreds of places, and inlining three PPU dots into
+    /// each of them would bloat the code far past the instruction cache.
+    @inline(never) func tick() {
         ppu.step()
         ppu.step()
         ppu.step()
@@ -64,7 +74,7 @@ public final class NES: Emulator {
 
     // MARK: Memory map
 
-    @inline(__always) func read(_ addr: UInt16) -> UInt8 {
+    func read(_ addr: UInt16) -> UInt8 {
         let value: UInt8
         switch addr {
         case 0x0000...0x1FFF:
@@ -88,7 +98,7 @@ public final class NES: Emulator {
         return value
     }
 
-    @inline(__always) func write(_ addr: UInt16, _ v: UInt8) {
+    func write(_ addr: UInt16, _ v: UInt8) {
         openBus = v
         switch addr {
         case 0x0000...0x1FFF:

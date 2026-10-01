@@ -140,7 +140,7 @@ public final class GameBoy: Emulator {
     // MARK: Clock
 
     /// One M-cycle of everything except the CPU.
-    @inline(__always) func tick() {
+    @inline(never) func tick() {
         if timaReload {
             timaReload = false
             tima = tma
@@ -244,7 +244,7 @@ public final class GameBoy: Emulator {
 
     // MARK: Memory map
 
-    @inline(__always) func read(_ addr: UInt16) -> UInt8 {
+    func read(_ addr: UInt16) -> UInt8 {
         switch addr >> 12 {
         case 0x0...0x7, 0xA, 0xB:
             return cart.read(addr)
@@ -264,7 +264,7 @@ public final class GameBoy: Emulator {
         }
     }
 
-    @inline(__always) func write(_ addr: UInt16, _ v: UInt8) {
+    func write(_ addr: UInt16, _ v: UInt8) {
         switch addr >> 12 {
         case 0x0...0x7, 0xA, 0xB:
             cart.write(addr, v)

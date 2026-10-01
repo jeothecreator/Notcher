@@ -62,8 +62,8 @@ public enum DemoCartridges {
         body(starMid, TileArt.parse(["", "", "", "", "..3....."]))
         body(starBright, TileArt.parse(["", "", "...3....", "..313...", "...3...."]))
         body(spriteStar, TileArt.parse(["", "", "", "...1...."]))
-        body(spriteStar + 1, TileArt.parse(["", "", "", "...22..."]))
-        body(spriteStar + 2, TileArt.parse(["", "", "", "..3321.."]))
+        body(spriteStar + 1, TileArt.parse(["", "", "", "...2...."]))
+        body(spriteStar + 2, TileArt.parse(["", "", "", "...31..."]))
         for quarter in 0..<4 {
             let ox = (quarter & 1) * 8
             let oy = (quarter >> 1) * 8
@@ -503,7 +503,7 @@ public enum DemoCartridges {
         screen.text("ARROWS FLY - HOLD A TO WARP", row: 21)
         screen.palette(3, rows: 20...21)
         screen.text("PLAY YOUR OWN ROMS IN THE NOTCH", row: 25, dim: true)
-        screen.stars(46, seed: 0xC0FF_EE01, avoid: [0, 6, 7, 8, 9, 20, 21, 29])
+        screen.stars(46, seed: 0xC0FF_EE01, avoid: [0, 6, 7, 8, 9, 12, 14, 20, 21, 25, 29])
 
         var attributes = [UInt8](repeating: 0, count: 64)
         for ay in 0..<8 {
@@ -877,7 +877,7 @@ public enum DemoCartridges {
         screen.text("HOLD A TO WARP", row: 13)
         screen.palette(5, rows: 12...13)
         screen.text("ROMS IN YOUR NOTCH", row: 16, dim: true)
-        screen.stars(26, seed: color ? 0xC0FF_EE02 : 0xC0FF_EE03, avoid: [1, 2, 3, 4, 12, 13])
+        screen.stars(26, seed: color ? 0xC0FF_EE02 : 0xC0FF_EE03, avoid: [1, 2, 3, 4, 6, 8, 12, 13, 16])
         return screen
     }
 
