@@ -241,6 +241,24 @@ final class ConsoleSession {
     func rename(_ updated: RomEntry) {
         entry = updated
     }
+
+    // MARK: Preview rendering
+
+    /// Runs scripted input straight through, for preview renders and tests.
+    func previewRun(_ script: [(frames: Int, buttons: ConsoleButtons)]) {
+        for step in script {
+            runner.sync { emulator in
+                emulator.buttons = step.buttons
+                for _ in 0..<step.frames { emulator.runFrame() }
+                _ = emulator.audio.drain()
+            }
+        }
+        if let picture = runner.snapshot() { image = picture }
+    }
+
+    func previewHold(_ buttons: ConsoleButtons) {
+        held = buttons
+    }
 }
 
 /// Draws console frames straight into a layer, outside SwiftUI's diffing.

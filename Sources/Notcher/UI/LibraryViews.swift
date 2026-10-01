@@ -299,17 +299,10 @@ struct EmptyLibraryCard: View {
                     .font(Theme.rounded(11, .medium))
                     .foregroundStyle(Theme.secondary)
                     .fixedSize(horizontal: false, vertical: true)
-                HStack(spacing: 6) {
-                    ForEach([".nes", ".gb", ".gbc", ".zip"], id: \.self) { ext in
-                        Text(ext)
-                            .font(Theme.mono(9.5, .bold))
-                            .foregroundStyle(Theme.secondary)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Capsule().fill(Color.white.opacity(0.07)))
-                    }
-                    Spacer(minLength: 8)
+                HStack(spacing: 8) {
                     ChooseFileButton(arcade: arcade)
+                    DemoButton(arcade: arcade)
+                    Spacer(minLength: 0)
                 }
                 .padding(.top, 4)
             }
@@ -347,6 +340,29 @@ struct ChooseFileButton: View {
         .buttonStyle(.plain)
         .hoverItem(.addRom)
         .animation(Theme.snappy, value: active)
+    }
+}
+
+/// Adds the built-in homebrew demos.
+struct DemoButton: View {
+    let arcade: ArcadeController
+    @State var hovering = false
+
+    var body: some View {
+        Button {
+            arcade.installDemos()
+        } label: {
+            Text("Try the demos")
+                .font(Theme.rounded(11, .bold))
+                .foregroundStyle(hovering ? Theme.primary : Theme.secondary)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(Capsule().fill(hovering ? Theme.surfaceHover : Theme.surface))
+                .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
+        .help("Adds three small homebrew games made for Notcher")
     }
 }
 

@@ -132,6 +132,21 @@ extension ArcadeController {
         ))
     }
 
+    /// Adds the three homebrew demo cartridges that ship with Notcher.
+    func installDemos() {
+        var added = 0
+        for cartridge in DemoCartridges.all {
+            if case .added? = try? library.importROM(cartridge.data, fileName: cartridge.fileName) {
+                added += 1
+            }
+        }
+        reloadLibrary()
+        showToast(Toast(
+            symbol: "sparkles", title: added > 0 ? "Demo games added" : "Demo games are already here",
+            subtitle: "Night Flight · Color Flight · Pocket Flight", colors: LauncherPage.library.colors
+        ))
+    }
+
     static func describe(_ error: LibraryError) -> (title: String, subtitle: String) {
         switch error {
         case .unreadable: return ("Couldn't read that file", "Import failed")
@@ -236,6 +251,30 @@ extension ArcadeController {
         dropEndTask = nil
         modeBeforeDrop = .closed
         importFiles(urls)
+    }
+
+    // MARK: - Preview rendering
+
+    /// Shows a ROM after running scripted input, without audio, focus or timers.
+    func previewConsole(_ id: String, script: [(frames: Int, buttons: ConsoleButtons)], held: ConsoleButtons = [], paused: Bool = false) {
+        guard let entry = library.entry(id),
+              let session = try? ConsoleSession(entry: entry, library: library, resume: false) else { return }
+        session.gamepad = { [] }
+        session.previewRun(script)
+        session.previewHold(held)
+        if paused { session.pause() }
+        consoleSession = session
+        previewState(mode: .console(id))
+    }
+
+    /// Stops the previewed ROM as Esc would, crediting `seconds` of play.
+    func previewFinishConsole(seconds: Double) {
+        guard let session = consoleSession else { return }
+        let id = session.entry.id
+        suspendConsole()
+        consoleSession = nil
+        library.notePlayed(id, seconds: seconds)
+        reloadLibrary()
     }
 
     /// True when a drop on the notch right now would be accepted.

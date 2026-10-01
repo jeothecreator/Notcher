@@ -16,7 +16,7 @@ enum PreviewRenderer {
         seed(arcade)
 
         func shot(_ name: String) {
-            if case .game = arcade.mode { arcade.previewClearToasts() }
+            if arcade.mode.isPlaying { arcade.previewClearToasts() }
             render(name, arcade: arcade, to: folder)
         }
 
@@ -166,7 +166,46 @@ enum PreviewRenderer {
         }
         arcade.trophiesTab = .achievements
 
+        renderROMs(arcade, shot: shot)
         renderShareCard(arcade, to: folder)
+    }
+
+    /// The drop target, the library and each console, using the built-in demo cartridges.
+    static func renderROMs(_ arcade: ArcadeController, shot: (String) -> Void) {
+        arcade.previewState(mode: .launcher, page: .library, hovered: .addRom)
+        shot("43-library-empty")
+
+        arcade.previewState(mode: .drop, dropTargeted: true, dragNames: ["Night Flight (Notcher Demo).nes"])
+        shot("09-drop")
+
+        arcade.installDemos()
+        arcade.previewClearToasts()
+        let ids = Dictionary(uniqueKeysWithValues: arcade.roms.map { ($0.system, $0.id) })
+        func flight(right: Int) -> [(frames: Int, buttons: ConsoleButtons)] {
+            [(frames: 70, buttons: []), (frames: right, buttons: [.right]), (frames: 8, buttons: [.right, .a])]
+        }
+        if let id = ids[.gameBoy] {
+            arcade.previewConsole(id, script: flight(right: 24), held: [.right])
+            shot("48-console-gb")
+            arcade.previewFinishConsole(seconds: 1_260)
+        }
+        if let id = ids[.gameBoyColor] {
+            arcade.previewConsole(id, script: flight(right: 30), held: [.right, .a])
+            shot("47-console-gbc")
+            arcade.previewFinishConsole(seconds: 2_940)
+        }
+        if let id = ids[.nes] {
+            arcade.previewConsole(id, script: flight(right: 40), held: [.right, .a])
+            shot("46-console-nes")
+            arcade.previewConsole(id, script: flight(right: 20), paused: true)
+            shot("49-console-paused")
+            arcade.previewFinishConsole(seconds: 4_380)
+            arcade.previewClearToasts()
+            arcade.previewState(mode: .launcher, page: .library, hovered: .rom(id), charging: .rom(id))
+            shot("45-library")
+            arcade.previewState(mode: .launcher, hovered: .rom(id))
+            shot("44-for-you-continue")
+        }
     }
 
     // MARK: Rendering

@@ -54,7 +54,7 @@ struct NotchRootView: View {
             .frame(height: size.height, alignment: .top)
             .animation(.spring(response: 0.46, dampingFraction: 0.82), value: size.height)
             .clipShape(NotchShape(topRadius: top, bottomRadius: bottom))
-            .onDrop(of: [.fileURL], delegate: NotchDropDelegate(arcade: arcade))
+            .modifier(NotchDropTarget(arcade: arcade))
             .overlay(alignment: .bottom) {
                 if expanded, let toast = arcade.toast {
                     ToastPill(toast: toast)
@@ -246,5 +246,20 @@ struct ToastPill: View {
         .background(Capsule().fill(Color(hex: 0x1C1C22)))
         .overlay(Capsule().strokeBorder(Color.white.opacity(0.1), lineWidth: 0.75))
         .shadow(color: .black.opacity(0.5), radius: 10, y: 4)
+    }
+}
+
+/// Files dropped on the notch. Left out of preview renders, which can't draw
+/// the platform view behind `onDrop`.
+struct NotchDropTarget: ViewModifier {
+    let arcade: ArcadeController
+    @Environment(\.previewRendering) private var previewRendering
+
+    func body(content: Content) -> some View {
+        if previewRendering {
+            content
+        } else {
+            content.onDrop(of: [.fileURL], delegate: NotchDropDelegate(arcade: arcade))
+        }
     }
 }
