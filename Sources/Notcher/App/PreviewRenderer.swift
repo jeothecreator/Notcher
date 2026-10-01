@@ -495,23 +495,20 @@ enum PreviewRenderer {
             session.input.clear()
         case let hop as HopEngine:
             session.press(.primary, isRepeat: false)
-            var hops = 0
-            for _ in 0..<(120 * 8) where hop.phase == .playing && hop.deathAt == nil && hops < 5 {
-                // Hop up only when the lane ahead stays clear for a moment.
-                let row = hop.frogRow - 1
-                let lane = hop.lanes[row]
+            // One hop onto the first road lane, timed for a gap in traffic.
+            for _ in 0..<(120 * 8) where hop.phase == .playing && hop.deathAt == nil {
+                let lane = hop.lanes[hop.frogRow - 1]
                 let clear = lane.movers.allSatisfy { m in
-                    let ahead = m.x + lane.speed * 0.25
-                    return hop.frogX + 14 < min(m.x, ahead) - 4 || hop.frogX - 14 > max(m.x, ahead) + m.width + 4
+                    let ahead = m.x + lane.speed * 0.9
+                    return hop.frogX + 14 < min(m.x, ahead) - 6 || hop.frogX - 14 > max(m.x, ahead) + m.width + 6
                 }
                 if clear {
                     session.press(.up, isRepeat: false)
-                    hops += 1
-                    for _ in 0..<20 { session.tick(1.0 / 120) }
+                    break
                 }
                 session.tick(1.0 / 120)
             }
-            for _ in 0..<6 { session.tick(1.0 / 120) }
+            for _ in 0..<12 { session.tick(1.0 / 120) }
         default:
             break
         }

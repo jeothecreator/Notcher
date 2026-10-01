@@ -300,17 +300,17 @@ struct CardView: View {
                 .fill(LinearGradient(colors: tint, startPoint: .top, endPoint: .bottom))
             RoundedRectangle(cornerRadius: 5, style: .continuous)
                 .strokeBorder(color.opacity(0.3), lineWidth: 0.75)
-            VStack(spacing: 1) {
+            VStack(spacing: 0) {
                 Image(systemName: symbol)
-                    .font(.system(size: 17, weight: .bold))
+                    .font(.system(size: 15, weight: .bold))
                 Text(card.suit.symbol)
-                    .font(.system(size: 13, weight: .bold))
+                    .font(.system(size: 11, weight: .bold))
             }
             .foregroundStyle(color)
         }
-        .padding(.horizontal, 9)
-        .padding(.top, 24)
-        .padding(.bottom, 8)
+        .padding(.horizontal, 8)
+        .padding(.top, 38)
+        .padding(.bottom, 7)
     }
 
     private var back: some View {

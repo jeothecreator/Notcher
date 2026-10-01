@@ -319,6 +319,8 @@ enum AstroRenderer {
         let r = rock.radius * 0.16
         let a = rock.angle * 0.7
         let cx = c.x + cos(a) * rock.radius * 0.38, cy = c.y + sin(a) * rock.radius * 0.38
+        // Start with an explicit move so arcs from different rocks never join up.
+        p.move(to: CGPoint(x: cx + cos(a + 0.6) * r, y: cy + sin(a + 0.6) * r))
         p.addArc(center: CGPoint(x: cx, y: cy), radius: r, startAngle: .radians(a + 0.6), endAngle: .radians(a + 3.6), clockwise: false)
         return p
     }
