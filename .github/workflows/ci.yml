@@ -12,8 +12,14 @@ jobs:
     container: swift:6.0
     steps:
       - uses: actions/checkout@v4
+      - name: Fetch conformance ROMs
+        run: |
+          command -v curl >/dev/null || (apt-get update -qq && apt-get install -y -qq curl >/dev/null)
+          ./Scripts/fetch-test-roms.sh
       - name: Test NotcherCore
         run: swift test
+      - name: Emulator conformance (release build)
+        run: NOTCHER_CONFORMANCE=1 swift test -c release -Xswiftc -enable-testing --filter Conformance
 
   app-macos:
     name: Build app (macOS)
@@ -26,6 +32,8 @@ jobs:
         run: |
           sudo xcode-select -s "$(ls -d /Applications/Xcode_16*.app | sort -V | tail -1)"
           swift --version
+      - name: Fetch conformance ROMs
+        run: ./Scripts/fetch-test-roms.sh
       - name: Test
         run: swift test
       - name: Build Notcher.app
