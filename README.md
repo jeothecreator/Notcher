@@ -13,6 +13,15 @@ Notcher turns the notch into a small arcade that behaves like the Dynamic Island
 
 **Hover → Choose → Play → Esc → Back to work.**
 
+<p align="center">
+  <img src="docs/screenshots/launcher.jpg" width="720" alt="The Notcher launcher expanded out of the notch">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/closed.jpg" width="49%" alt="Closed notch with the live ticker">
+  <img src="docs/screenshots/toast.jpg" width="49%" alt="Achievement toast growing out of the notch">
+</p>
+
 - **Hover to open.** The notch grows sideways, then down, and the games fade in.
 - **Hover to launch.** Rest on a game for 0.3 s and it starts. A ring of light around the tile shows the countdown, and moving away cancels it.
 - **Esc to leave.** Esc closes the game and hands keyboard focus back to the app you were in. Clicking anywhere else does the same.
@@ -33,6 +42,33 @@ Notcher turns the notch into a small arcade that behaves like the Dynamic Island
 | | **Farm**: crops grow in real time, from 30-second wheat to 45-minute starfruit | arrows · `↵` plant/harvest · `tab` seed · `A` harvest all |
 | 🎴 Classics | **Solitaire**: Klondike with drag & drop, double-click to send home, undo and auto-finish | arrows · `↵` pick/drop · `D` draw · `A` auto · `U` undo |
 | | **Arcade**: a rotating cabinet of micro games (Flap, Dodge, Bullseye, Echo), with a different one featured each day | `tab` switch game |
+
+<table>
+  <tr>
+    <td><img src="docs/screenshots/runner.jpg" alt="Runner"></td>
+    <td><img src="docs/screenshots/snake.jpg" alt="Snake"></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/breakout.jpg" alt="Breakout"></td>
+    <td><img src="docs/screenshots/2048.jpg" alt="2048"></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/mines.jpg" alt="Mines"></td>
+    <td><img src="docs/screenshots/reaction.jpg" alt="Reaction"></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/miner.jpg" alt="Miner"></td>
+    <td><img src="docs/screenshots/farm.jpg" alt="Farm"></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/solitaire.jpg" alt="Solitaire"></td>
+    <td><img src="docs/screenshots/arcade-flap.jpg" alt="Arcade: Flap"></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/game-over.jpg" alt="Game over card"></td>
+    <td><img src="docs/screenshots/trophies.jpg" alt="Trophies"></td>
+  </tr>
+</table>
 
 Keys that work everywhere: `esc` back to work · `P` pause · `R` restart · `M` mute · `S` share score card.
 
@@ -93,6 +129,16 @@ Sources/
 - **Game loop.** A `CADisplayLink` ticks the active engine, which runs at 120 Hz on ProMotion displays. Engines emit events (sounds, stats, records, screen shake), and the app turns those into audio, achievements and leaderboard entries.
 - **Sound** is synthesized at launch with `AVAudioEngine`. The app ships no audio files.
 - **Persistence** is one JSON file in `~/Library/Application Support/Notcher/`. Decoding is tolerant, so updates never wipe your progress.
+
+## Screenshots
+
+The images in this README are rendered by the app itself:
+
+```bash
+.build/release/Notcher --render-previews previews/
+```
+
+That command plays every game for a few seconds with a small autopilot and writes each notch state to a PNG. CI runs it on every push and attaches the results as the `Notcher-previews` artifact.
 
 ## Tests
 
