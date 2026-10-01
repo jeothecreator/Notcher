@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  core-linux:
+    name: Core tests (Linux)
+    runs-on: ubuntu-latest
+    container: swift:6.0
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test NotcherCore
+        run: swift test
+
+  app-macos:
+    name: Build app (macOS)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Select Xcode
+        run: |
+          sudo xcode-select -s "$(ls -d /Applications/Xcode_16*.app | sort -V | tail -1)"
+          swift --version
+      - name: Test
+        run: swift test
+      - name: Build Notcher.app
+        run: ./Scripts/build-app.sh --zip
+      - name: Upload app
+        uses: actions/upload-artifact@v4
+        with:
+          name: Notcher-app
+          path: build/Notcher.zip
+          if-no-files-found: error
