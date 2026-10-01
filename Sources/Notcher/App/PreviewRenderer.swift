@@ -22,13 +22,27 @@ enum PreviewRenderer {
         arcade.previewState(mode: .closed)
         shot("01-closed")
 
-        arcade.previewState(mode: .launcher, hovered: .game(.snake), charging: .game(.snake))
+        arcade.previewState(mode: .launcher, hovered: .game(.stack), charging: .game(.stack))
         shot("02-launcher")
 
-        arcade.previewState(mode: .closed, toast: Toast(symbol: "crown.fill", title: "Snake God", subtitle: "Achievement unlocked", colors: GameID.snake.style.colors))
-        shot("03-toast")
+        arcade.previewState(mode: .launcher, page: .category(.action), hovered: .game(.invaders))
+        shot("03-launcher-action")
 
-        // Runner mid-jump
+        arcade.previewState(mode: .launcher, page: .category(.puzzle), hovered: .game(.gems))
+        shot("04-launcher-puzzle")
+
+        arcade.previewState(mode: .launcher, page: .category(.brain), hovered: .game(.lexi))
+        shot("05-launcher-brain")
+
+        arcade.previewState(mode: .launcher, page: .category(.idle), hovered: .page(.category(.idle)))
+        shot("06-launcher-idle")
+
+        arcade.previewState(mode: .launcher, hovered: .quit, quitArmed: true)
+        shot("07-quit")
+
+        arcade.previewState(mode: .closed, toast: Toast(symbol: "crown.fill", title: "Snake God", subtitle: "Achievement unlocked", colors: GameID.snake.style.colors))
+        shot("08-toast")
+
         let runner = arcade.previewSession(.runner)
         if let e = runner.engine as? RunnerEngine { autopilotRunner(e, session: runner, seconds: 7.3) }
         shot("10-runner")
@@ -45,17 +59,53 @@ enum PreviewRenderer {
         if let e = breakout.engine as? BreakoutEngine { autopilotBreakout(e, session: breakout, seconds: 14.2) }
         shot("13-breakout")
 
+        let invaders = arcade.previewSession(.invaders, engine: InvadersEngine(seed: 7))
+        if let e = invaders.engine as? InvadersEngine { autopilotInvaders(e, session: invaders, seconds: 9) }
+        shot("14-invaders")
+
+        let astro = arcade.previewSession(.astro, engine: AstroEngine(seed: 5))
+        if let e = astro.engine as? AstroEngine { autopilotAstro(e, session: astro, seconds: 6) }
+        shot("15-astro")
+
+        let trails = arcade.previewSession(.trails, engine: TrailsEngine(seed: 3))
+        if let e = trails.engine as? TrailsEngine { autopilotTrails(e, session: trails, seconds: 4.5) }
+        shot("16-trails")
+
+        let stack = arcade.previewSession(.stack, engine: StackEngine(seed: 11))
+        if let e = stack.engine as? StackEngine { autopilotStack(e, session: stack, pieces: 34) }
+        shot("17-stack")
+
         let twenty48 = arcade.previewSession(.twenty48)
         if let e = twenty48.engine as? Twenty48Engine {
             let moves: [GameKey] = [.left, .down, .right, .down]
             for i in 0..<140 where e.phase != .over { twenty48.press(moves[i % 4], isRepeat: false) }
             settle(twenty48, seconds: 0.5)
         }
-        shot("14-2048")
+        shot("18-2048")
+
+        let gems = arcade.previewSession(.gems, engine: GemsEngine(seed: 21))
+        if let e = gems.engine as? GemsEngine { autoplayGems(e, session: gems, moves: 6) }
+        shot("19-gems")
+
+        let sudoku = arcade.previewSession(.sudoku, engine: SudokuEngine(seed: 4, difficulty: .medium))
+        if let e = sudoku.engine as? SudokuEngine { autoplaySudoku(e, session: sudoku) }
+        shot("20-sudoku")
 
         let mines = arcade.previewSession(.mines)
         if let e = mines.engine as? MinesEngine { autoplayMines(e, session: mines) }
-        shot("15-mines")
+        shot("21-mines")
+
+        let solitaire = arcade.previewSession(.solitaire)
+        if let e = solitaire.engine as? SolitaireEngine { autoplaySolitaire(e, session: solitaire) }
+        shot("22-solitaire")
+
+        let lexi = arcade.previewSession(.lexi, engine: LexiEngine(seed: 12))
+        if let e = lexi.engine as? LexiEngine { autoplayLexi(e, session: lexi, solve: false) }
+        shot("23-lexi")
+
+        let typer = arcade.previewSession(.typer, engine: TyperEngine(seed: 8))
+        if let e = typer.engine as? TyperEngine { autoplayTyper(e, session: typer) }
+        shot("24-typer")
 
         var clock = 100.0
         let reactionEngine = ReactionEngine(seed: 3, now: { clock })
@@ -67,7 +117,11 @@ enum PreviewRenderer {
             clock += Double(ms) / 1000
             reaction.press(.primary, isRepeat: false)
         }
-        shot("16-reaction")
+        shot("25-reaction")
+
+        let four = arcade.previewSession(.four, engine: FourEngine(seed: 2))
+        if let e = four.engine as? FourEngine { autoplayFour(e, session: four) }
+        shot("26-four")
 
         let miner = arcade.previewSession(.miner)
         if let e = miner.engine as? MinerEngine {
@@ -75,38 +129,41 @@ enum PreviewRenderer {
             for _ in 0..<7 { e.mine() }
             settle(miner, seconds: 0.25)
         }
-        shot("17-miner")
+        shot("27-miner")
 
         let farm = arcade.previewSession(.farm)
         settle(farm, seconds: 0.2)
-        shot("18-farm")
-
-        let solitaire = arcade.previewSession(.solitaire)
-        if let e = solitaire.engine as? SolitaireEngine { autoplaySolitaire(e, session: solitaire) }
-        shot("19-solitaire")
+        shot("28-farm")
 
         for (index, mini) in ArcadeMini.allCases.enumerated() {
             let session = arcade.previewSession(.arcade, engine: ArcadeEngine(featured: mini))
             autoplayArcade(session)
-            shot("2\(index)-arcade-\(mini.rawValue)")
+            shot("3\(index)-arcade-\(mini.rawValue)")
         }
 
         // A finished run with a new personal best.
         let over = arcade.previewSession(.snake)
         if let e = over.engine as? SnakeEngine {
             autopilotSnake(e, session: over, apples: 42)
-            // Then stop steering and let it hit the wall.
             for _ in 0..<(120 * 20) where e.phase == .playing { over.tick(1.0 / 120) }
             settle(over, seconds: 0.8)
         }
-        shot("30-game-over")
+        shot("40-game-over")
+
+        let solved = arcade.previewSession(.lexi, engine: LexiEngine(seed: 30))
+        if let e = solved.engine as? LexiEngine { autoplayLexi(e, session: solved, solve: true) }
+        shot("41-lexi-solved")
 
         let daily = arcade.previewSession(arcade.daily.game, daily: true)
         settle(daily, seconds: 0.1)
-        shot("31-daily-ready")
+        shot("42-daily-ready")
 
-        arcade.previewState(mode: .trophies)
-        shot("40-trophies")
+        for (i, tab) in TrophiesTab.allCases.enumerated() {
+            arcade.trophiesTab = tab
+            arcade.previewState(mode: .trophies)
+            shot("5\(i)-trophies-\(tab.rawValue.lowercased())")
+        }
+        arcade.trophiesTab = .achievements
 
         renderShareCard(arcade, to: folder)
     }
@@ -124,7 +181,7 @@ enum PreviewRenderer {
 
     static func renderShareCard(_ arcade: ArcadeController, to folder: URL) {
         let card = ShareCardView(board: "runner", value: 18_420, isBest: true, player: arcade.save.profile.displayName, daily: false)
-        write(card, scale: 1, to: folder.appendingPathComponent("50-share-card.png"))
+        write(card, scale: 1, to: folder.appendingPathComponent("60-share-card.png"))
     }
 
     static func write<V: View>(_ view: V, scale: CGFloat, to url: URL) {
@@ -151,6 +208,8 @@ enum PreviewRenderer {
             ("snake", 380, 0), ("snake", 240, -1), ("pong", 27, -2), ("breakout", 2_340, 0),
             ("twenty48", 12_840, -1), ("mines", 48_200, -2), ("reaction", 172, 0), ("reaction", 214, -1),
             ("solitaire", 151_000, -4), ("arcade.flap", 23, 0), ("arcade.dodge", 640, -1), ("arcade.echo", 9, -2),
+            ("stack", 18_400, 0), ("stack", 9_250, -1), ("lexi", 400, 0), ("lexi", 300, -1), ("typer", 74, -1),
+            ("arcade.lander", 410, -2),
         ]
         for (board, value, days) in runs {
             save.scores.record(value, board: board, at: now.addingTimeInterval(days * 86_400 - 3_600))
@@ -160,7 +219,8 @@ enum PreviewRenderer {
         save.stats.gameLaunches = 112
         save.stats.escExits = 71
         save.stats.playSeconds = 5_420
-        save.stats.plays = ["runner": 31, "snake": 18, "pong": 6, "breakout": 9, "twenty48": 7, "reaction": 12, "solitaire": 3]
+        save.stats.plays = ["runner": 31, "snake": 18, "pong": 6, "breakout": 9, "twenty48": 7, "reaction": 12, "solitaire": 3, "stack": 14, "lexi": 9, "typer": 4]
+        for game in [GameID.runner, .lexi, .snake, .twenty48, .stack] { save.stats.noteLaunch(game) }
         for back in 1...2 {
             if let day = cal.date(byAdding: .day, value: -back, to: now) {
                 save.stats.markDaily(DayKey.key(for: day))
@@ -415,9 +475,309 @@ enum PreviewRenderer {
                 }
             }
             for _ in 0..<70 { session.tick(1.0 / 120) }
+        case let lander as LanderEngine:
+            session.press(.up, isRepeat: false)
+            session.release(.up)
+            for _ in 0..<(120 * 3) where lander.phase == .playing {
+                // Hover-ish: burn when falling fast, drift toward the nearest pad.
+                session.input.release(.up)
+                session.input.release(.left)
+                session.input.release(.right)
+                if lander.velocity.y > 14 { session.input.press(.up) }
+                if let pad = lander.pads.min(by: { abs(($0.x0 + $0.x1) / 2 - lander.position.x) < abs(($1.x0 + $1.x1) / 2 - lander.position.x) }) {
+                    let dx = (pad.x0 + pad.x1) / 2 - lander.position.x
+                    let wantAngle = max(-0.3, min(0.3, dx * 0.004 - lander.velocity.x * 0.01))
+                    if lander.angle < wantAngle - 0.03 { session.input.press(.right) } else if lander.angle > wantAngle + 0.03 { session.input.press(.left) }
+                }
+                session.tick(1.0 / 120)
+            }
+            session.input.clear()
+        case let hop as HopEngine:
+            session.press(.up, isRepeat: false)
+            for _ in 0..<6 {
+                for _ in 0..<40 { session.tick(1.0 / 120) }
+                guard hop.phase == .playing, hop.deathAt == nil, hop.frogRow > 5 else { break }
+                session.press(.up, isRepeat: false)
+            }
+            for _ in 0..<8 { session.tick(1.0 / 120) }
         default:
             break
         }
+    }
+}
+
+extension PreviewRenderer {
+    static func autopilotInvaders(_ e: InvadersEngine, session: GameSession, seconds: Double) {
+        session.press(.primary, isRepeat: false)
+        session.release(.primary)
+        var fire = 0.0
+        for frame in 0..<Int(seconds * 120) {
+            guard e.phase == .playing else { break }
+            // Chase the lowest alien in the nearest column.
+            let targets = e.aliens.filter(\.alive).map { e.alienBox($0) }
+            let target = targets.min { abs($0.midX - e.playerX) < abs($1.midX - e.playerX) }?.midX ?? InvadersEngine.width / 2
+            session.input.release(.left)
+            session.input.release(.right)
+            if target < e.playerX - 4 { session.input.press(.left) } else if target > e.playerX + 4 { session.input.press(.right) }
+            fire += 1.0 / 120
+            if fire > 0.32 {
+                fire = 0
+                session.press(.primary, isRepeat: false)
+                session.release(.primary)
+            }
+            session.tick(1.0 / 120)
+            if frame % 240 == 0 { session.input.clear() }
+        }
+        session.input.clear()
+    }
+
+    static func autopilotAstro(_ e: AstroEngine, session: GameSession, seconds: Double) {
+        session.press(.primary, isRepeat: false)
+        session.release(.primary)
+        var fire = 0.0
+        let frames = Int(seconds * 120)
+        for frame in 0..<frames {
+            guard e.phase == .playing else { break }
+            session.input.release(.left)
+            session.input.release(.right)
+            session.input.release(.up)
+            if let rock = e.rocks.min(by: { distance(e.ship.position, $0.position) < distance(e.ship.position, $1.position) }) {
+                let want = atan2(rock.position.y - e.ship.position.y, rock.position.x - e.ship.position.x)
+                var diff = want - e.ship.angle
+                while diff > .pi { diff -= 2 * .pi }
+                while diff < -.pi { diff += 2 * .pi }
+                if diff > 0.08 { session.input.press(.right) } else if diff < -0.08 { session.input.press(.left) }
+                fire += 1.0 / 120
+                if abs(diff) < 0.2 && fire > 0.25 {
+                    fire = 0
+                    session.press(.primary, isRepeat: false)
+                    session.release(.primary)
+                }
+            }
+            // Thrust near the end so the flame shows.
+            if frame > frames - 50 { session.input.press(.up) }
+            session.tick(1.0 / 120)
+        }
+    }
+
+    static func distance(_ a: Vec2, _ b: Vec2) -> Double {
+        ((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y)).squareRoot()
+    }
+
+    static func autopilotTrails(_ e: TrailsEngine, session: GameSession, seconds: Double) {
+        session.press(.up, isRepeat: false)
+        session.release(.up)
+        var lastHead: GridPoint?
+        for _ in 0..<Int(seconds * 120) {
+            guard e.phase == .playing, let me = e.bikes.first, me.alive else { break }
+            if me.head != lastHead {
+                lastHead = me.head
+                var blocked = Set<GridPoint>()
+                for bike in e.bikes { blocked.formUnion(bike.path) }
+                func free(_ p: GridPoint) -> Bool {
+                    p.x >= 0 && p.y >= 0 && p.x < TrailsEngine.columns && p.y < TrailsEngine.rows && !blocked.contains(p)
+                }
+                func room(_ start: GridPoint) -> Int {
+                    guard free(start) else { return -1 }
+                    var seen: Set<GridPoint> = [start]
+                    var queue = [start]
+                    var i = 0
+                    while i < queue.count && seen.count < 300 {
+                        let p = queue[i]
+                        i += 1
+                        for d in Direction.allCases {
+                            let n = GridPoint(p.x + d.delta.x, p.y + d.delta.y)
+                            if free(n) && !seen.contains(n) {
+                                seen.insert(n)
+                                queue.append(n)
+                            }
+                        }
+                    }
+                    return seen.count
+                }
+                let options = Direction.allCases.filter { $0 != me.direction.opposite }
+                let scored = options.map { d -> (Direction, Int) in
+                    let n = GridPoint(me.head.x + d.delta.x, me.head.y + d.delta.y)
+                    // Prefer going straight when it's just as roomy, for clean lines.
+                    return (d, room(n) * 4 + (d == me.direction ? 2 : 0))
+                }
+                if let best = scored.max(by: { $0.1 < $1.1 }), best.0 != me.direction {
+                    session.press(GameKey.from(best.0), isRepeat: false)
+                    session.release(GameKey.from(best.0))
+                }
+            }
+            session.tick(1.0 / 120)
+        }
+    }
+
+    static func autopilotStack(_ e: StackEngine, session: GameSession, pieces: Int) {
+        session.press(.primary, isRepeat: false)
+        session.release(.primary)
+        settle(session, seconds: 0.1)
+        let cols = StackEngine.columns, rows = StackEngine.totalRows
+        for _ in 0..<pieces {
+            guard e.phase == .playing, let piece = e.current else { break }
+            var board = e.board.map { $0.map { $0 != nil } }
+            var best: (rotation: Int, x: Int, score: Double)?
+            for rotation in 0..<4 {
+                let shape = piece.kind.cells(rotation: rotation)
+                let minX = shape.map(\.x).min() ?? 0, maxX = shape.map(\.x).max() ?? 0
+                for x in (-minX)..<(cols - maxX) {
+                    var y = 0
+                    func fits(_ y: Int) -> Bool {
+                        shape.allSatisfy { c in
+                            let cx = c.x + x, cy = c.y + y
+                            return cx >= 0 && cx < cols && cy < rows && (cy < 0 || !board[cy][cx])
+                        }
+                    }
+                    guard fits(0) else { continue }
+                    while fits(y + 1) { y += 1 }
+                    for c in shape { board[c.y + y][c.x + x] = true }
+                    let score = evaluate(board)
+                    for c in shape { board[c.y + y][c.x + x] = false }
+                    if best == nil || score > best!.score { best = (rotation, x, score) }
+                }
+            }
+            guard let plan = best else { break }
+            for _ in 0..<plan.rotation {
+                session.press(.up, isRepeat: false)
+                session.release(.up)
+            }
+            // The piece's x is the box origin; shift until it matches the plan.
+            var guardCount = 0
+            while let current = e.current, current.x != plan.x, guardCount < 12 {
+                let key: GameKey = current.x > plan.x ? .left : .right
+                session.press(key, isRepeat: false)
+                session.release(key)
+                guardCount += 1
+            }
+            session.press(.primary, isRepeat: false)
+            session.release(.primary)
+            settle(session, seconds: 0.4)
+        }
+        // Let the next piece drop a little so the ghost shows.
+        settle(session, seconds: 0.6)
+    }
+
+    static func evaluate(_ board: [[Bool]]) -> Double {
+        let rows = board.count, cols = board.first?.count ?? 0
+        var heights = Array(repeating: 0, count: cols)
+        var holes = 0
+        for x in 0..<cols {
+            var seen = false
+            for y in 0..<rows {
+                if board[y][x] {
+                    if !seen { heights[x] = rows - y; seen = true }
+                } else if seen {
+                    holes += 1
+                }
+            }
+        }
+        let lines = board.filter { $0.allSatisfy { $0 } }.count
+        let bumpiness = zip(heights, heights.dropFirst()).map { abs($0 - $1) }.reduce(0, +)
+        return -0.51 * Double(heights.reduce(0, +)) + 0.76 * Double(lines) - 0.36 * Double(holes) * 2 - 0.18 * Double(bumpiness)
+    }
+
+    static func autoplayGems(_ e: GemsEngine, session: GameSession, moves: Int) {
+        for _ in 0..<moves {
+            guard e.phase != .over, let move = e.findMove() else { break }
+            e.select(move.0)
+            e.select(move.1)
+            var guardCount = 0
+            repeat {
+                session.tick(1.0 / 120)
+                guardCount += 1
+            } while e.isBusy && guardCount < 120 * 6
+        }
+        if let move = e.findMove() { e.select(move.0) }
+        settle(session, seconds: 0.2)
+    }
+
+    static func autoplaySudoku(_ e: SudokuEngine, session: GameSession) {
+        var filled = 0
+        for i in 0..<81 where !e.isGiven(i) && (i * 7) % 3 != 0 {
+            e.select(i % 9, i / 9)
+            session.press(.number(e.solution[i]), isRepeat: false)
+            filled += 1
+            if filled > 22 { break }
+            session.tick(1.0 / 60)
+        }
+        // A few pencil marks.
+        session.press(.flag, isRepeat: false)
+        var noted = 0
+        for i in 0..<81 where e.value(i) == 0 && noted < 3 {
+            e.select(i % 9, i / 9)
+            for n in [e.solution[i], (e.solution[i] % 9) + 1] { session.press(.number(n), isRepeat: false) }
+            noted += 1
+        }
+        session.press(.flag, isRepeat: false)
+        settle(session, seconds: 34)
+        if let i = (0..<81).first(where: { !e.isGiven($0) && e.value($0) != 0 }) { e.select(i % 9, i / 9) }
+        settle(session, seconds: 1.2)
+    }
+
+    static func typeWord(_ word: String, into session: GameSession) {
+        for c in word {
+            session.press(.char(c), isRepeat: false)
+            session.release(.char(c))
+            session.tick(1.0 / 60)
+        }
+    }
+
+    static func autoplayLexi(_ e: LexiEngine, session: GameSession, solve: Bool) {
+        let answer = Array(e.answer)
+        // Guesses that share letters with the answer, for a colourful board.
+        func overlap(_ word: String) -> Int {
+            LexiEngine.mark(word, against: e.answer).map { $0 == .correct ? 3 : ($0 == .present ? 1 : 0) }.reduce(0, +)
+        }
+        let pool = WordList.shared.answers.filter { $0 != e.answer }
+        let first = pool.filter { overlap($0) <= 2 }.max { overlap($0) < overlap($1) } ?? pool[0]
+        let second = pool.filter { $0 != first && overlap($0) >= 4 && overlap($0) < 9 }.first ?? pool[1]
+        for guess in [first, second] {
+            typeWord(guess, into: session)
+            session.press(.confirm, isRepeat: false)
+            settle(session, seconds: 2)
+        }
+        if solve {
+            typeWord(e.answer, into: session)
+            session.press(.confirm, isRepeat: false)
+            settle(session, seconds: 4.5)
+        } else {
+            typeWord(String(answer.prefix(2)) + "r", into: session)
+            settle(session, seconds: 0.2)
+        }
+    }
+
+    static func autoplayTyper(_ e: TyperEngine, session: GameSession) {
+        for w in 0..<15 {
+            var word = e.currentWord
+            if w == 5 { word = String(word.dropLast()) + "q" }
+            for c in word {
+                session.press(.char(c), isRepeat: false)
+                for _ in 0..<12 { session.tick(1.0 / 120) }
+            }
+            session.press(.primary, isRepeat: false)
+            for _ in 0..<10 { session.tick(1.0 / 120) }
+        }
+        for c in e.currentWord.prefix(2) {
+            session.press(.char(c), isRepeat: false)
+            for _ in 0..<12 { session.tick(1.0 / 120) }
+        }
+    }
+
+    static func autoplayFour(_ e: FourEngine, session: GameSession) {
+        for column in [3, 2, 4, 4, 1] {
+            guard e.phase != .over, e.result == nil else { break }
+            e.choose(column: column)
+            session.press(.primary, isRepeat: false)
+            var guardCount = 0
+            repeat {
+                session.tick(1.0 / 120)
+                guardCount += 1
+            } while (e.turn != .player || e.drop != nil) && e.result == nil && guardCount < 120 * 4
+        }
+        e.choose(column: 5)
+        settle(session, seconds: 0.3)
     }
 }
 

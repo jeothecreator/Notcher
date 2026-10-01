@@ -154,7 +154,7 @@ final class NotchWindowController: NSObject, NSWindowDelegate {
 
     private func handleKey(_ event: NSEvent) -> Bool {
         guard event.window === panel || (event.window == nil && panel.isKeyWindow) else { return false }
-        guard let key = KeyMapper.map(event) else { return false }
+        guard let key = KeyMapper.map(event, textMode: arcade.wantsTextInput) else { return false }
         if event.type == .keyUp {
             if case .game(let gameKey) = key { arcade.keyUp(gameKey) }
             return true

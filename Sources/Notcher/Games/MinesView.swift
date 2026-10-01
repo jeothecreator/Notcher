@@ -154,23 +154,29 @@ enum MinesRenderer {
 struct ClickCatcher: NSViewRepresentable {
     var onClick: (CGPoint, Bool) -> Void
     var onMove: ((CGPoint?) -> Void)?
+    /// Called while dragging with the press point and the current point.
+    var onDrag: ((CGPoint, CGPoint) -> Void)? = nil
 
     func makeNSView(context: Context) -> ClickCatcherView {
         let view = ClickCatcherView()
         view.onClick = onClick
         view.onMove = onMove
+        view.onDrag = onDrag
         return view
     }
 
     func updateNSView(_ view: ClickCatcherView, context: Context) {
         view.onClick = onClick
         view.onMove = onMove
+        view.onDrag = onDrag
     }
 }
 
 final class ClickCatcherView: NSView {
     var onClick: ((CGPoint, Bool) -> Void)?
     var onMove: ((CGPoint?) -> Void)?
+    var onDrag: ((CGPoint, CGPoint) -> Void)?
+    private var pressPoint: CGPoint?
 
     override var isFlipped: Bool { true }
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
@@ -187,7 +193,18 @@ final class ClickCatcherView: NSView {
 
     override func mouseDown(with event: NSEvent) {
         let secondary = event.modifierFlags.contains(.control) || event.modifierFlags.contains(.option)
-        onClick?(convert(event.locationInWindow, from: nil), secondary)
+        let point = convert(event.locationInWindow, from: nil)
+        pressPoint = point
+        onClick?(point, secondary)
+    }
+
+    override func mouseDragged(with event: NSEvent) {
+        guard let start = pressPoint else { return }
+        onDrag?(start, convert(event.locationInWindow, from: nil))
+    }
+
+    override func mouseUp(with event: NSEvent) {
+        pressPoint = nil
     }
 
     override func rightMouseDown(with event: NSEvent) {

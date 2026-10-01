@@ -12,7 +12,7 @@ public struct ScoreEntry: Codable, Equatable, Sendable {
     }
 }
 
-public enum LeaderboardPeriod: String, CaseIterable, Sendable {
+public enum ScorePeriod: String, CaseIterable, Sendable {
     case today, week, allTime
 
     public var title: String {
@@ -80,7 +80,7 @@ public struct ScoreBook: Codable, Equatable, Sendable {
         }
     }
 
-    public func top(_ board: String, period: LeaderboardPeriod, now: Date = Date(), calendar: Calendar = .current, limit: Int = 10) -> [ScoreEntry] {
+    public func top(_ board: String, period: ScorePeriod, now: Date = Date(), calendar: Calendar = .current, limit: Int = 10) -> [ScoreEntry] {
         let list = boards[board] ?? []
         let filtered: [ScoreEntry]
         switch period {

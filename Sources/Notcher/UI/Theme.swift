@@ -10,6 +10,7 @@ enum Theme {
     static let secondary = Color.white.opacity(0.58)
     static let tertiary = Color.white.opacity(0.34)
     static let field = Color(hex: 0x0A0A0D)
+    static let dailyColors = [Color(hex: 0xFFB340), Color(hex: 0xFF375F)]
 
     static let spring = Animation.spring(response: 0.42, dampingFraction: 0.82)
     static let snappy = Animation.spring(response: 0.28, dampingFraction: 0.8)
@@ -62,6 +63,15 @@ extension GameID {
         case .farm: return GameStyle(symbol: "leaf.fill", colors: [Color(hex: 0x9BEA7C), Color(hex: 0x2E9E5B)])
         case .solitaire: return GameStyle(symbol: "suit.spade.fill", colors: [Color(hex: 0xA9A7FF), Color(hex: 0x5E5CE6)])
         case .arcade: return GameStyle(symbol: "gamecontroller.fill", colors: [Color(hex: 0xFF8AC2), Color(hex: 0x8B5CFF)])
+        case .invaders: return GameStyle(symbol: nil, colors: [Color(hex: 0x7CFFCB), Color(hex: 0x14B8A6)])
+        case .astro: return GameStyle(symbol: nil, colors: [Color(hex: 0xE6E9FF), Color(hex: 0x7C83FF)])
+        case .trails: return GameStyle(symbol: nil, colors: [Color(hex: 0x3DF5FF), Color(hex: 0xFF3DCB)])
+        case .stack: return GameStyle(symbol: nil, colors: [Color(hex: 0x60A5FA), Color(hex: 0x7C3AED)])
+        case .gems: return GameStyle(symbol: nil, colors: [Color(hex: 0x6EF7B5), Color(hex: 0x0EA371)])
+        case .sudoku: return GameStyle(symbol: nil, colors: [Color(hex: 0x67E8F9), Color(hex: 0x0891B2)])
+        case .lexi: return GameStyle(symbol: nil, colors: [Color(hex: 0xB7F77A), Color(hex: 0xE8B931)])
+        case .typer: return GameStyle(symbol: "keyboard.fill", colors: [Color(hex: 0xF0ABFC), Color(hex: 0xA855F7)])
+        case .four: return GameStyle(symbol: nil, colors: [Color(hex: 0xFFD93D), Color(hex: 0xFF5F6D)])
         }
     }
 }
@@ -73,6 +83,8 @@ extension ArcadeMini {
         case .dodge: return [Color(hex: 0x8AF2FF), Color(hex: 0x5865F2)]
         case .bullseye: return [Color(hex: 0xFF8A80), Color(hex: 0xFF2D78)]
         case .echo: return [Color(hex: 0xC9A7FF), Color(hex: 0x30D5C8)]
+        case .lander: return [Color(hex: 0xE5E7EB), Color(hex: 0x60A5FA)]
+        case .hop: return [Color(hex: 0xB9F99D), Color(hex: 0x16A34A)]
         }
     }
 
@@ -82,11 +94,33 @@ extension ArcadeMini {
         case .dodge: return "sparkles"
         case .bullseye: return "scope"
         case .echo: return "waveform"
+        case .lander: return "moon.fill"
+        case .hop: return "hare.fill"
         }
     }
 }
 
-/// Style for any leaderboard key.
+extension GameCategory {
+    var colors: [Color] {
+        switch self {
+        case .action: return [Color(hex: 0xFFB340), Color(hex: 0xFF5E3A)]
+        case .puzzle: return [Color(hex: 0x7AD7FF), Color(hex: 0x6366F1)]
+        case .brain: return [Color(hex: 0xF0ABFC), Color(hex: 0xA855F7)]
+        case .idle: return [Color(hex: 0x9BEA7C), Color(hex: 0x2E9E5B)]
+        }
+    }
+}
+
+extension LauncherPage {
+    var colors: [Color] {
+        switch self {
+        case .forYou: return GameID.arcade.style.colors
+        case .category(let c): return c.colors
+        }
+    }
+}
+
+/// Style for any score key.
 func boardStyle(_ board: String) -> (symbol: String?, colors: [Color], game: GameID?) {
     if let game = GameID(rawValue: board) {
         return (game.style.symbol, game.style.colors, game)

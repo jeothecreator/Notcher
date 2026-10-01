@@ -148,6 +148,11 @@ final class SoundEngine {
         case .note2: return [tone(.triangle, 523.25, dur: 0.3, gain: 0.32, curve: 1.2)]
         case .note3: return [tone(.triangle, 659.25, dur: 0.3, gain: 0.32, curve: 1.2)]
         case .note4: return [tone(.triangle, 783.99, dur: 0.3, gain: 0.32, curve: 1.2)]
+        case .march: return [tone(.square, 92, to: 78, dur: 0.08, gain: 0.16, curve: 1.3)]
+        case .laser: return [tone(.square, 1500, to: 320, dur: 0.11, gain: 0.07, curve: 1.2)]
+        case .thrust: return [tone(.noise, 1, dur: 0.09, gain: 0.05, curve: 0.8)]
+        case .key: return [tone(.noise, 1, dur: 0.012, gain: 0.05), tone(.sine, 2300, to: 1700, dur: 0.012, gain: 0.05)]
+        case .drop: return [tone(.sine, 520, to: 170, dur: 0.12, gain: 0.26, curve: 1.4)]
         }
     }
 }

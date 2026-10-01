@@ -1,5 +1,6 @@
 import Carbon.HIToolbox
 import Foundation
+import NotcherCore
 
 enum HoverLaunch: String, CaseIterable, Identifiable {
     case fast, relaxed, click
@@ -104,8 +105,7 @@ enum Prefs {
         static let menuBarIcon = "showMenuBarIcon"
         static let drawThree = "solitaireDrawThree"
         static let display = "display"
-        static let leaderboardURL = "leaderboardURL"
-        static let leaderboardKey = "leaderboardKey"
+        static let sudokuDifficulty = "sudokuDifficulty"
         static let onboarded = "onboarded"
     }
 
@@ -123,8 +123,7 @@ enum Prefs {
             Key.menuBarIcon: true,
             Key.drawThree: false,
             Key.display: DisplayChoice.automatic.rawValue,
-            Key.leaderboardURL: "",
-            Key.leaderboardKey: "",
+            Key.sudokuDifficulty: SudokuEngine.Difficulty.medium.rawValue,
             Key.onboarded: false,
         ])
     }
@@ -150,6 +149,12 @@ enum Prefs {
 
     static var display: DisplayChoice {
         DisplayChoice(rawValue: defaults.string(forKey: Key.display) ?? "") ?? .automatic
+    }
+
+    /// The last Sudoku difficulty played, so the next puzzle starts there.
+    static var sudokuDifficulty: SudokuEngine.Difficulty {
+        get { SudokuEngine.Difficulty(rawValue: defaults.integer(forKey: Key.sudokuDifficulty)) ?? .medium }
+        set { defaults.set(newValue.rawValue, forKey: Key.sudokuDifficulty) }
     }
 
     static func toggleSound() {

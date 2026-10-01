@@ -1,16 +1,15 @@
 import NotcherCore
 import SwiftUI
 
+enum TrophiesTab: String, CaseIterable {
+    case achievements = "Achievements"
+    case records = "Records"
+    case stats = "Stats"
+}
+
 struct TrophiesView: View {
     let arcade: ArcadeController
 
-    enum Tab: String, CaseIterable {
-        case leaderboards = "Leaderboards"
-        case achievements = "Achievements"
-        case stats = "Stats"
-    }
-
-    @State private var tab: Tab = .leaderboards
 
     var body: some View {
         let m = arcade.metrics
@@ -42,9 +41,10 @@ struct TrophiesView: View {
             .frame(height: m.notchHeight)
 
             HStack(spacing: 6) {
-                ForEach(Tab.allCases, id: \.self) { t in
+                ForEach(TrophiesTab.allCases, id: \.self) { t in
+                    let tab = arcade.trophiesTab
                     Button {
-                        withAnimation(Theme.snappy) { tab = t }
+                        withAnimation(Theme.snappy) { arcade.trophiesTab = t }
                     } label: {
                         Text(t.rawValue)
                             .font(Theme.rounded(11, .bold))
@@ -63,9 +63,9 @@ struct TrophiesView: View {
             .padding(.top, 10)
 
             Group {
-                switch tab {
-                case .leaderboards: LeaderboardsPane(arcade: arcade)
+                switch arcade.trophiesTab {
                 case .achievements: AchievementsPane(arcade: arcade)
+                case .records: RecordsPane(arcade: arcade)
                 case .stats: StatsPane(arcade: arcade)
                 }
             }
@@ -77,54 +77,77 @@ struct TrophiesView: View {
     }
 }
 
-// MARK: - Leaderboards
+// MARK: - Records
 
-struct LeaderboardsPane: View {
+/// Personal bests per game and the runs behind them.
+struct RecordsPane: View {
     let arcade: ArcadeController
 
-    enum Period: Hashable {
-        case local(LeaderboardPeriod)
-        case global
-    }
-
     @State private var board = GameID.runner.rawValue
-    @State private var period: Period = .local(.allTime)
-    @State private var remote: [RemoteScore]?
-    @State private var loading = false
+    @State private var period: ScorePeriod = .allTime
 
     var body: some View {
         HStack(alignment: .top, spacing: 14) {
             VerticalScroll {
-                VStack(spacing: 3) {
+                VStack(spacing: 2) {
                     ForEach(BoardInfo.allBoards, id: \.self) { key in
                         boardRow(key)
                     }
                 }
                 .padding(.bottom, 18)
             }
-            .frame(width: 176)
+            .frame(width: 196)
             .mask(
                 LinearGradient(stops: [.init(color: .black, location: 0), .init(color: .black, location: 0.86), .init(color: .clear, location: 1)], startPoint: .top, endPoint: .bottom)
             )
 
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 10) {
+                summary
                 HStack(spacing: 5) {
-                    ForEach(LeaderboardPeriod.allCases, id: \.self) { p in
-                        periodPill(p.title, .local(p))
-                    }
-                    if arcade.leaderboard.isConfigured {
-                        periodPill("Global", .global)
+                    ForEach(ScorePeriod.allCases, id: \.self) { p in
+                        periodPill(p)
                     }
                     Spacer()
                 }
                 entries
             }
         }
-        .task(id: "\(board)|\(period)") {
-            guard period == .global else { return }
-            loading = true
-            remote = await arcade.leaderboard.top(board: board, period: .allTime)
-            loading = false
+    }
+
+    private var summary: some View {
+        let style = boardStyle(board)
+        let best = arcade.save.scores.best(board)
+        return HStack(spacing: 12) {
+            Group {
+                if let game = style.game {
+                    GameGlyph(game: game, size: 26)
+                } else {
+                    Image(systemName: style.symbol ?? "gamecontroller.fill")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundStyle(LinearGradient(colors: style.colors, startPoint: .top, endPoint: .bottom))
+                }
+            }
+            .frame(width: 40, height: 40)
+            .background(RoundedRectangle(cornerRadius: 11, style: .continuous).fill(style.colors[0].opacity(0.12)))
+            VStack(alignment: .leading, spacing: 1) {
+                Text(BoardInfo.title(for: board).uppercased())
+                    .font(Theme.rounded(9, .heavy))
+                    .tracking(1)
+                    .foregroundStyle(Theme.tertiary)
+                Text(best.map { Format.score($0, board: board) } ?? "No record yet")
+                    .font(Theme.mono(best == nil ? 15 : 22, .heavy))
+                    .foregroundStyle(LinearGradient(colors: [.white, style.colors[0]], startPoint: .top, endPoint: .bottom))
+            }
+            Spacer()
+            VStack(alignment: .trailing, spacing: 1) {
+                Text("RUNS")
+                    .font(Theme.rounded(8.5, .heavy))
+                    .tracking(1)
+                    .foregroundStyle(Theme.tertiary)
+                Text(Format.grouped(arcade.save.scores.runs(board)))
+                    .font(Theme.mono(15, .bold))
+                    .foregroundStyle(Theme.primary)
+            }
         }
     }
 
@@ -133,7 +156,7 @@ struct LeaderboardsPane: View {
         let selected = key == board
         let best = arcade.save.scores.best(key)
         return Button {
-            board = key
+            withAnimation(Theme.snappy) { board = key }
         } label: {
             HStack(spacing: 7) {
                 Group {
@@ -146,27 +169,28 @@ struct LeaderboardsPane: View {
                     }
                 }
                 .frame(width: 14)
-                Text(BoardInfo.title(for: key).replacingOccurrences(of: "Arcade · ", with: ""))
+                Text(BoardInfo.title(for: key))
                     .font(Theme.rounded(11, .bold))
                     .foregroundStyle(selected ? Theme.primary : Theme.secondary)
+                    .lineLimit(1)
                 Spacer(minLength: 4)
                 Text(best.map { Format.score($0, board: key) } ?? "—")
                     .font(Theme.mono(9.5, .semibold))
                     .foregroundStyle(Theme.tertiary)
             }
             .padding(.horizontal, 9)
-            .frame(height: 24)
+            .frame(height: 23)
             .background(RoundedRectangle(cornerRadius: 7, style: .continuous).fill(selected ? Color.white.opacity(0.09) : .clear))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
 
-    private func periodPill(_ title: String, _ value: Period) -> some View {
+    private func periodPill(_ value: ScorePeriod) -> some View {
         Button {
             period = value
         } label: {
-            Text(title)
+            Text(value.title)
                 .font(Theme.rounded(10, .bold))
                 .foregroundStyle(period == value ? Theme.primary : Theme.tertiary)
                 .padding(.horizontal, 9)
@@ -178,63 +202,42 @@ struct LeaderboardsPane: View {
     }
 
     @ViewBuilder private var entries: some View {
-        switch period {
-        case .local(let p):
-            let rows = arcade.save.scores.top(board, period: p, limit: 7)
-            if rows.isEmpty {
-                emptyState(p == .today ? "No runs today yet." : "No runs yet. Go set a score!")
-            } else {
-                VStack(spacing: 3) {
-                    ForEach(Array(rows.enumerated()), id: \.offset) { index, entry in
-                        entryRow(rank: index + 1, name: arcade.save.profile.displayName, value: entry.value, trailing: entry.date.formatted(.relative(presentation: .named)), mine: true)
-                    }
+        let rows = arcade.save.scores.top(board, period: period, limit: 5)
+        if rows.isEmpty {
+            Text(period == .today ? "No runs today yet." : "No runs yet. Go set a record!")
+                .font(Theme.rounded(11.5, .medium))
+                .foregroundStyle(Theme.tertiary)
+                .frame(maxWidth: .infinity, maxHeight: 120)
+        } else {
+            VStack(spacing: 3) {
+                ForEach(Array(rows.enumerated()), id: \.offset) { index, entry in
+                    entryRow(rank: index + 1, entry: entry)
                 }
-            }
-        case .global:
-            if loading {
-                emptyState("Loading…")
-            } else if let remote, !remote.isEmpty {
-                VStack(spacing: 3) {
-                    ForEach(Array(remote.prefix(7).enumerated()), id: \.offset) { index, entry in
-                        entryRow(rank: index + 1, name: entry.name, value: entry.value, trailing: "", mine: entry.player_id == arcade.save.profile.id)
-                    }
-                }
-            } else {
-                emptyState("Couldn't reach the leaderboard server.")
             }
         }
     }
 
-    private func entryRow(rank: Int, name: String, value: Int, trailing: String, mine: Bool) -> some View {
+    private func entryRow(rank: Int, entry: ScoreEntry) -> some View {
         let style = boardStyle(board)
         return HStack(spacing: 10) {
             Text("\(rank)")
                 .font(Theme.mono(12, .heavy))
                 .foregroundStyle(rank == 1 ? AnyShapeStyle(LinearGradient(colors: [Color(hex: 0xFFE07A), Color(hex: 0xFF9F0A)], startPoint: .top, endPoint: .bottom)) : AnyShapeStyle(Theme.tertiary))
                 .frame(width: 18, alignment: .trailing)
-            Text(name)
-                .font(Theme.rounded(11.5, .bold))
-                .foregroundStyle(mine ? Theme.primary : Theme.secondary)
-                .lineLimit(1)
+            Text(entry.date.formatted(.relative(presentation: .named)))
+                .font(Theme.rounded(11, .semibold))
+                .foregroundStyle(Theme.secondary)
+            if entry.daily {
+                Chip(text: "DAILY", colors: Theme.dailyColors, foreground: .black)
+            }
             Spacer()
-            Text(trailing)
-                .font(Theme.rounded(9.5, .medium))
-                .foregroundStyle(Theme.tertiary)
-            Text(Format.score(value, board: board))
+            Text(Format.score(entry.value, board: board))
                 .font(Theme.mono(12.5, .heavy))
                 .foregroundStyle(LinearGradient(colors: [.white, style.colors[0]], startPoint: .top, endPoint: .bottom))
-                .frame(minWidth: 70, alignment: .trailing)
         }
         .padding(.horizontal, 10)
-        .frame(height: 26)
+        .frame(height: 25)
         .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(rank == 1 ? style.colors[0].opacity(0.1) : Theme.surface))
-    }
-
-    private func emptyState(_ text: String) -> some View {
-        Text(text)
-            .font(Theme.rounded(11.5, .medium))
-            .foregroundStyle(Theme.tertiary)
-            .frame(maxWidth: .infinity, maxHeight: 160)
     }
 }
 
@@ -304,39 +307,82 @@ struct StatsPane: View {
 
     var body: some View {
         let stats = arcade.save.stats
-        let mostPlayed = stats.plays.max { $0.value < $1.value }.flatMap { GameID(rawValue: $0.key) }
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3), spacing: 10) {
-            tile("Games played", Format.grouped(stats.gamesPlayed), "gamecontroller.fill", GameID.arcade.style.colors)
-            tile("Time played", Format.playTime(seconds: stats.playSeconds), "clock.fill", GameID.pong.style.colors)
-            tile("Back to work", Format.grouped(stats.escExits), "escape", GameID.farm.style.colors)
-            tile("Launches", Format.grouped(stats.gameLaunches), "paperplane.fill", GameID.runner.style.colors)
-            tile("Daily streak", "\(stats.dailyStreak(today: Date()))", "flame.fill", [Color(hex: 0xFFB340), Color(hex: 0xFF375F)])
-            tile("Favourite", mostPlayed?.title ?? "—", "heart.fill", GameID.breakout.style.colors)
+        let ranked = stats.plays.sorted { $0.value > $1.value }.compactMap { entry in GameID(rawValue: entry.key).map { ($0, entry.value) } }
+        VerticalScroll {
+            VStack(alignment: .leading, spacing: 12) {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 8) {
+                    tile("Games played", Format.grouped(stats.gamesPlayed), "gamecontroller.fill", GameID.arcade.style.colors)
+                    tile("Time played", Format.playTime(seconds: stats.playSeconds), "clock.fill", GameID.pong.style.colors)
+                    tile("Back to work", Format.grouped(stats.escExits), "escape", GameID.farm.style.colors)
+                    tile("Launches", Format.grouped(stats.gameLaunches), "paperplane.fill", GameID.runner.style.colors)
+                    tile("Daily streak", "\(stats.dailyStreak(today: Date()))", "flame.fill", Theme.dailyColors)
+                    tile("Dailies done", Format.grouped(stats.dailyCompleted.count), "calendar", GameID.twenty48.style.colors)
+                    tile("Trophies", "\(arcade.save.achievements.count)/\(AchievementCatalog.all.count)", "trophy.fill", [Color(hex: 0xFFE07A), Color(hex: 0xFF9F0A)])
+                    tile("Games tried", "\(ranked.count)/\(GameID.allCases.count)", "square.grid.2x2.fill", GameID.breakout.style.colors)
+                }
+                if !ranked.isEmpty {
+                    Text("MOST PLAYED")
+                        .font(Theme.rounded(8.5, .heavy))
+                        .tracking(1.2)
+                        .foregroundStyle(Theme.tertiary)
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: 2), spacing: 6) {
+                        ForEach(Array(ranked.prefix(6).enumerated()), id: \.offset) { _, item in
+                            bar(item.0, plays: item.1, top: ranked[0].1)
+                        }
+                    }
+                }
+            }
+            .padding(.bottom, 12)
         }
     }
 
     private func tile(_ title: String, _ value: String, _ symbol: String, _ colors: [Color]) -> some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 9) {
             Image(systemName: symbol)
-                .font(.system(size: 14, weight: .bold))
+                .font(.system(size: 12, weight: .bold))
                 .foregroundStyle(LinearGradient(colors: colors, startPoint: .topLeading, endPoint: .bottomTrailing))
-                .frame(width: 30, height: 30)
+                .frame(width: 26, height: 26)
                 .background(Circle().fill(colors[0].opacity(0.12)))
             VStack(alignment: .leading, spacing: 1) {
                 Text(title.uppercased())
-                    .font(Theme.rounded(8, .heavy))
-                    .tracking(1)
+                    .font(Theme.rounded(7.5, .heavy))
+                    .tracking(0.8)
                     .foregroundStyle(Theme.tertiary)
+                    .lineLimit(1)
                 Text(value)
-                    .font(Theme.mono(18, .heavy))
+                    .font(Theme.mono(15, .heavy))
                     .foregroundStyle(Theme.primary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
             }
             Spacer(minLength: 0)
         }
-        .padding(12)
-        .frame(height: 66)
-        .cardBackground(cornerRadius: 14)
+        .padding(10)
+        .frame(height: 54)
+        .cardBackground(cornerRadius: 12)
+    }
+
+    private func bar(_ game: GameID, plays: Int, top: Int) -> some View {
+        HStack(spacing: 8) {
+            GameGlyph(game: game, size: 13)
+            Text(game.title)
+                .font(Theme.rounded(10.5, .bold))
+                .foregroundStyle(Theme.secondary)
+                .frame(width: 64, alignment: .leading)
+            GeometryReader { proxy in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Color.white.opacity(0.06))
+                    Capsule()
+                        .fill(game.style.gradient)
+                        .frame(width: max(6, proxy.size.width * CGFloat(plays) / CGFloat(max(1, top))))
+                }
+            }
+            .frame(height: 6)
+            Text("\(plays)")
+                .font(Theme.mono(9.5, .semibold))
+                .foregroundStyle(Theme.tertiary)
+                .frame(width: 30, alignment: .trailing)
+        }
+        .frame(height: 16)
     }
 }

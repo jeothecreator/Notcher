@@ -15,13 +15,15 @@ struct ArcadeView: View {
             case let e as DodgeEngine: DodgeRenderer.draw(e, in: ctx)
             case let e as BullseyeEngine: BullseyeRenderer.draw(e, in: ctx)
             case let e as EchoEngine: EchoRenderer.draw(e, in: ctx)
+            case let e as LanderEngine: LanderRenderer.draw(e, in: ctx)
+            case let e as HopEngine: HopRenderer.draw(e, in: ctx)
             default: break
             }
         }
     }
 }
 
-/// Pills for the four mini games; Tab cycles.
+/// Pills for the mini games; Tab cycles.
 struct ArcadeMiniPicker: View {
     let session: GameSession
     let engine: ArcadeEngine
@@ -301,5 +303,252 @@ enum EchoRenderer {
         let caption = Text("ROUNDS").font(.system(size: 8.5, weight: .heavy, design: .rounded)).foregroundStyle(Color.white.opacity(0.35))
         ctx.draw(caption, at: CGPoint(x: w - 90, y: h / 2 + 22), anchor: .center)
         _ = t
+    }
+}
+
+// MARK: - Lander
+
+enum LanderRenderer {
+    static let padColors: [Int: Color] = [2: Color(hex: 0x7CF08A), 3: Color(hex: 0x6AD4FF), 5: Color(hex: 0xFFD93D)]
+    static let hull = [Color(hex: 0xF4F6FF), Color(hex: 0xA9B4D6)]
+
+    static func draw(_ e: LanderEngine, in ctx: GraphicsContext) {
+        let w = LanderEngine.width, h = LanderEngine.height
+        let t = e.clock
+        ctx.fill(Path(CGRect(x: 0, y: 0, width: w, height: h)),
+                 with: ctx.linear([Color(hex: 0x04050C), Color(hex: 0x0D1026), Color(hex: 0x161433)], from: .zero, to: CGPoint(x: 0, y: h)))
+        for (i, s) in e.stars.enumerated() {
+            let a = 0.2 + 0.5 * hash01(i, 31)
+            ctx.fill(Path(CGRect(x: s.x, y: s.y, width: 1.2, height: 1.2)), with: .color(.white.opacity(a)))
+        }
+        // A planet on the horizon
+        let planet = CGRect(x: w - 150, y: 18, width: 70, height: 70)
+        ctx.fill(Path(ellipseIn: planet), with: ctx.linear([Color(hex: 0x6AD4FF).opacity(0.5), Color(hex: 0x3478F6).opacity(0.15)], from: CGPoint(x: planet.minX, y: planet.minY), to: CGPoint(x: planet.maxX, y: planet.maxY)))
+        ctx.fill(Path(ellipseIn: planet.offsetBy(dx: 12, dy: -6)), with: .color(Color(hex: 0x0D1026).opacity(0.85)))
+
+        // Terrain
+        var ground = Path()
+        ground.move(to: CGPoint(x: 0, y: h))
+        for p in e.terrain { ground.addLine(to: p.point) }
+        ground.addLine(to: CGPoint(x: w, y: h))
+        ground.closeSubpath()
+        ctx.fill(ground, with: ctx.linear([Color(hex: 0x2C3150), Color(hex: 0x10121D)], from: CGPoint(x: 0, y: 120), to: CGPoint(x: 0, y: h)))
+        var ridge = Path()
+        for (i, p) in e.terrain.enumerated() {
+            if i == 0 { ridge.move(to: p.point) } else { ridge.addLine(to: p.point) }
+        }
+        ctx.glow(Color(hex: 0x9BB8FF).opacity(0.5), radius: 4) { layer in
+            layer.stroke(ridge, with: .color(Color(hex: 0xC9D2FF).opacity(0.7)), style: StrokeStyle(lineWidth: 1.2, lineJoin: .round))
+        }
+
+        // Pads
+        for pad in e.pads {
+            let color = padColors[pad.multiplier] ?? .white
+            ctx.glow(color, radius: 6) { layer in
+                layer.fill(Path(roundedRect: CGRect(x: pad.x0, y: pad.y - 1.5, width: pad.x1 - pad.x0, height: 3), cornerRadius: 1.5), with: .color(color))
+            }
+            let blink = sin(t * 6) > 0
+            for x in [pad.x0 + 2, pad.x1 - 2] {
+                ctx.fillCircle(CGPoint(x: x, y: pad.y - 4), radius: 1.4, with: .color(color.opacity(blink ? 1 : 0.3)))
+            }
+            let label = Text("×\(pad.multiplier)").font(.system(size: 10, weight: .heavy, design: .rounded)).foregroundStyle(color)
+            ctx.draw(label, at: CGPoint(x: (pad.x0 + pad.x1) / 2, y: pad.y + 4), anchor: .top)
+        }
+
+        drawParticles(e.particles.particles, in: ctx, palette: [Color(hex: 0xFFB340), Color(hex: 0xFF6B3D)])
+
+        // Lander
+        if e.crashedAt == nil {
+            var l = ctx
+            l.translateBy(x: e.position.x, y: e.position.y)
+            l.rotate(by: .radians(e.angle))
+            if e.thrusting {
+                let len = 9 + 5 * (0.5 + 0.5 * sin(t * 55))
+                var f = Path()
+                f.move(to: CGPoint(x: -3.5, y: 5))
+                f.addLine(to: CGPoint(x: 0, y: 5 + len))
+                f.addLine(to: CGPoint(x: 3.5, y: 5))
+                f.closeSubpath()
+                l.glow(Color(hex: 0xFF8A3D), radius: 8) { layer in
+                    layer.fill(f, with: layer.linear([Color(hex: 0xFFF3C4), Color(hex: 0xFF8A3D)], from: CGPoint(x: 0, y: 5), to: CGPoint(x: 0, y: 5 + len)))
+                }
+            }
+            var legs = Path()
+            legs.move(to: CGPoint(x: -5, y: 3)); legs.addLine(to: CGPoint(x: -8, y: 8))
+            legs.move(to: CGPoint(x: 5, y: 3)); legs.addLine(to: CGPoint(x: 8, y: 8))
+            legs.move(to: CGPoint(x: -10, y: 8)); legs.addLine(to: CGPoint(x: -6, y: 8))
+            legs.move(to: CGPoint(x: 6, y: 8)); legs.addLine(to: CGPoint(x: 10, y: 8))
+            l.stroke(legs, with: .color(hull[1]), style: StrokeStyle(lineWidth: 1.4, lineCap: .round))
+            l.glow(.white.opacity(0.5), radius: 6) { layer in
+                layer.fill(Path(roundedRect: CGRect(x: -7, y: -6, width: 14, height: 10), cornerRadius: 4), with: layer.linear(hull, from: CGPoint(x: 0, y: -6), to: CGPoint(x: 0, y: 4)))
+            }
+            l.fillCircle(CGPoint(x: 0, y: -1.5), radius: 2.6, with: .color(Color(hex: 0x3478F6)))
+            l.fillCircle(CGPoint(x: -0.8, y: -2.3), radius: 0.9, with: .color(.white.opacity(0.8)))
+        }
+
+        // HUD
+        panelLabel("Fuel", in: ctx, at: CGPoint(x: 12, y: 10))
+        let fuel = e.fuel / 100
+        ctx.fill(Path(roundedRect: CGRect(x: 40, y: 12, width: 80, height: 5), cornerRadius: 2.5), with: .color(.white.opacity(0.1)))
+        ctx.fill(Path(roundedRect: CGRect(x: 40, y: 12, width: 80 * fuel, height: 5), cornerRadius: 2.5),
+                 with: .color(fuel < 0.2 ? Color(hex: 0xFF6B6B) : Color(hex: 0xFFB340)))
+        let vSafe = e.velocity.y < 26, hSafe = abs(e.velocity.x) < 16, aSafe = abs(e.angle) < 0.22
+        let readouts: [(String, String, Bool)] = [
+            ("V", "\(Int(e.velocity.y.rounded()))", vSafe), ("H", "\(Int(abs(e.velocity.x).rounded()))", hSafe), ("A", "\(Int((e.angle * 180 / .pi).rounded()))°", aSafe),
+        ]
+        for (i, r) in readouts.enumerated() {
+            let x = 12 + Double(i) * 46
+            let text = Text("\(r.0) \(r.1)").font(.system(size: 10, weight: .bold, design: .rounded).monospacedDigit())
+                .foregroundStyle(r.2 ? Color(hex: 0x7CF08A) : Color(hex: 0xFF8A80))
+            ctx.draw(text, at: CGPoint(x: x, y: 24), anchor: .topLeading)
+        }
+        let score = Text("\(e.score)").font(.system(size: 30, weight: .black, design: .rounded).monospacedDigit()).foregroundStyle(Color.white.opacity(0.85))
+        ctx.draw(score, at: CGPoint(x: w / 2, y: 10), anchor: .top)
+        if let landed = e.landedAt {
+            let a = min(1, (t - landed) * 4)
+            let text = Text("TOUCHDOWN").font(.system(size: 22, weight: .black, design: .rounded)).foregroundStyle(Color(hex: 0x7CF08A).opacity(a))
+            ctx.draw(text, at: CGPoint(x: w / 2, y: 80), anchor: .center)
+        }
+    }
+}
+
+// MARK: - Hop
+
+enum HopRenderer {
+    static let cars: [Color] = [Color(hex: 0xFF6B7A), Color(hex: 0xFFD93D), Color(hex: 0x5B9CFF), Color(hex: 0xC77DFF)]
+    static let frog = [Color(hex: 0xC6FF8A), Color(hex: 0x34C759)]
+
+    static func draw(_ e: HopEngine, in ctx: GraphicsContext) {
+        let w = HopEngine.width
+        let lane = HopEngine.lane
+        let t = e.clock
+
+        for row in 0..<HopEngine.rows {
+            let y = Double(row) * lane
+            let rect = CGRect(x: 0, y: y, width: w, height: lane)
+            switch HopEngine.kind(of: row) {
+            case .goal:
+                ctx.fill(Path(rect), with: ctx.linear([Color(hex: 0x123B22), Color(hex: 0x0B2416)], from: CGPoint(x: 0, y: y), to: CGPoint(x: 0, y: y + lane)))
+                for (i, bx) in HopEngine.bays.enumerated() {
+                    let bay = CGRect(x: bx - 18, y: y + 3, width: 36, height: lane - 3)
+                    ctx.fill(Path(roundedRect: bay, cornerRadius: 7), with: .color(Color(hex: 0x0A1E3A)))
+                    if e.filled[i] { drawFrog(at: CGPoint(x: bx, y: y + lane / 2 + 1), in: ctx, t: t, happy: true) }
+                }
+            case .river:
+                ctx.fill(Path(rect), with: ctx.linear([Color(hex: 0x0C2D5C), Color(hex: 0x0A2247)], from: CGPoint(x: 0, y: y), to: CGPoint(x: 0, y: y + lane)))
+                var waves = Path()
+                for k in 0..<12 {
+                    let wx = (Double(k) * 58 + t * 14 * (row % 2 == 0 ? 1 : -1)).truncatingRemainder(dividingBy: w + 40)
+                    let x = wx < -20 ? wx + w + 40 : wx
+                    waves.move(to: CGPoint(x: x, y: y + 8 + Double(k % 2) * 8))
+                    waves.addQuadCurve(to: CGPoint(x: x + 14, y: y + 8 + Double(k % 2) * 8), control: CGPoint(x: x + 7, y: y + 5 + Double(k % 2) * 8))
+                }
+                ctx.stroke(waves, with: .color(.white.opacity(0.1)), lineWidth: 1)
+            case .road:
+                ctx.fill(Path(rect), with: .color(Color(hex: 0x15151C)))
+                if row < 8 {
+                    var dash = Path()
+                    var x = 6.0
+                    while x < w {
+                        dash.addRect(CGRect(x: x, y: y + lane - 1, width: 14, height: 1.4))
+                        x += 30
+                    }
+                    ctx.fill(dash, with: .color(.white.opacity(0.18)))
+                }
+            case .safe:
+                ctx.fill(Path(rect), with: ctx.linear([Color(hex: 0x2A2240), Color(hex: 0x1E1930)], from: CGPoint(x: 0, y: y), to: CGPoint(x: 0, y: y + lane)))
+                for k in 0..<40 {
+                    let x = hash01(k, row * 7) * w
+                    ctx.fill(Path(CGRect(x: x, y: y + 4 + hash01(k, row * 7 + 1) * (lane - 8), width: 2, height: 2)), with: .color(Color(hex: 0xC77DFF).opacity(0.18)))
+                }
+            }
+
+            for mover in e.lanes[row].movers {
+                let speed = e.lanes[row].speed
+                switch HopEngine.kind(of: row) {
+                case .river:
+                    let log = CGRect(x: mover.x, y: y + 3, width: mover.width, height: lane - 6)
+                    ctx.fill(Path(roundedRect: log, cornerRadius: 8), with: ctx.linear([Color(hex: 0xA0703F), Color(hex: 0x6B4423)], from: CGPoint(x: 0, y: log.minY), to: CGPoint(x: 0, y: log.maxY)))
+                    var bark = Path()
+                    var bx = log.minX + 12
+                    while bx < log.maxX - 8 {
+                        bark.move(to: CGPoint(x: bx, y: log.minY + 5)); bark.addLine(to: CGPoint(x: bx + 10, y: log.minY + 5))
+                        bark.move(to: CGPoint(x: bx + 6, y: log.maxY - 5)); bark.addLine(to: CGPoint(x: bx + 16, y: log.maxY - 5))
+                        bx += 26
+                    }
+                    ctx.stroke(bark, with: .color(Color(hex: 0x4A2E17).opacity(0.7)), style: StrokeStyle(lineWidth: 1.2, lineCap: .round))
+                    ctx.fill(Path(ellipseIn: CGRect(x: log.maxX - 9, y: log.minY + 2, width: 7, height: log.height - 4)), with: .color(Color(hex: 0xC99A66)))
+                case .road:
+                    let car = CGRect(x: mover.x, y: y + 4, width: mover.width, height: lane - 8)
+                    let color = cars[mover.style % cars.count]
+                    ctx.glow(color.opacity(0.5), radius: 5) { layer in
+                        layer.fill(Path(roundedRect: car, cornerRadius: 5), with: layer.linear([mix(color, .white, 0.25), color], from: CGPoint(x: 0, y: car.minY), to: CGPoint(x: 0, y: car.maxY)))
+                    }
+                    let front = speed > 0 ? car.maxX : car.minX
+                    let windowX = speed > 0 ? car.maxX - 14 : car.minX + 6
+                    ctx.fill(Path(roundedRect: CGRect(x: windowX, y: car.minY + 3, width: 8, height: car.height - 6), cornerRadius: 2), with: .color(Color(hex: 0x0E1830).opacity(0.8)))
+                    for dy in [car.minY + 3, car.maxY - 3] {
+                        ctx.glow(Color(hex: 0xFFF3C4), radius: 4) { layer in
+                            layer.fillCircle(CGPoint(x: front, y: dy), radius: 1.6, with: .color(Color(hex: 0xFFF3C4)))
+                        }
+                    }
+                default:
+                    break
+                }
+            }
+        }
+
+        // Frog (with a little hop arc)
+        var fx = e.frogX, fy = Double(e.frogRow) * lane + lane / 2
+        var lift = 0.0
+        if let hop = e.hopFrom, t - hop.at < 0.12 {
+            let p = (t - hop.at) / 0.12
+            fx = hop.x + (fx - hop.x) * p
+            let fromY = Double(hop.row) * lane + lane / 2
+            fy = fromY + (fy - fromY) * p
+            lift = sin(p * .pi) * 4
+        }
+        if let death = e.deathAt {
+            if sin((t - death) * 30) > 0 {
+                drawFrog(at: CGPoint(x: fx, y: fy), in: ctx, t: t, tint: Color(hex: 0xFF6B6B))
+            }
+        } else if e.phase != .over {
+            drawFrog(at: CGPoint(x: fx, y: fy - lift), in: ctx, t: t, scale: 1 + lift * 0.04)
+        }
+
+        drawParticles(e.particles.particles, in: ctx, palette: [frog[1], Color(hex: 0xFF6B6B), Color(hex: 0xFFE07A)])
+
+        // HUD in the start row
+        let y = Double(HopEngine.rows - 1) * lane
+        for i in 0..<max(0, e.lives) {
+            drawFrog(at: CGPoint(x: 16 + Double(i) * 18, y: y + lane / 2), in: ctx, t: 0, scale: 0.55)
+        }
+        let frac = max(0, e.timeLeft / 30)
+        ctx.fill(Path(roundedRect: CGRect(x: w - 130, y: y + 10, width: 100, height: 4), cornerRadius: 2), with: .color(.white.opacity(0.1)))
+        ctx.fill(Path(roundedRect: CGRect(x: w - 130, y: y + 10, width: 100 * frac, height: 4), cornerRadius: 2),
+                 with: .color(frac < 0.25 ? Color(hex: 0xFF6B6B) : frog[0]))
+        let level = Text("L\(e.level)").font(.system(size: 9, weight: .heavy, design: .rounded)).foregroundStyle(Color.white.opacity(0.4))
+        ctx.draw(level, at: CGPoint(x: w - 12, y: y + lane / 2), anchor: .trailing)
+    }
+
+    static func drawFrog(at c: CGPoint, in ctx: GraphicsContext, t: Double, scale: Double = 1, tint: Color? = nil, happy: Bool = false) {
+        var f = ctx
+        f.translateBy(x: c.x, y: c.y)
+        f.scaleBy(x: scale, y: scale)
+        let body = tint.map { [$0, $0] } ?? frog
+        // Legs
+        var legs = Path()
+        for s in [-1.0, 1.0] {
+            legs.addEllipse(in: CGRect(x: s * 8 - 3, y: -7, width: 6, height: 5))
+            legs.addEllipse(in: CGRect(x: s * 8 - 3, y: 3, width: 6, height: 5))
+        }
+        f.fill(legs, with: .color(body[1]))
+        f.glow(body[1].opacity(0.6), radius: 5) { layer in
+            layer.fill(Path(ellipseIn: CGRect(x: -7, y: -7, width: 14, height: 14)), with: layer.linear(body, from: CGPoint(x: 0, y: -7), to: CGPoint(x: 0, y: 7)))
+        }
+        for s in [-1.0, 1.0] {
+            f.fillCircle(CGPoint(x: s * 3.6, y: -5), radius: 2.6, with: .color(.white))
+            f.fillCircle(CGPoint(x: s * 3.6, y: happy ? -4.6 : -5.6), radius: 1.2, with: .color(.black))
+        }
     }
 }

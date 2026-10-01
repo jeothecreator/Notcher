@@ -12,17 +12,48 @@ enum NotchMode: Equatable {
     var isExpanded: Bool { self != .closed }
 }
 
+/// A page of the launcher, picked in the sidebar.
+enum LauncherPage: Hashable {
+    case forYou
+    case category(GameCategory)
+
+    static let all: [LauncherPage] = [.forYou] + GameCategory.allCases.map { .category($0) }
+
+    var title: String {
+        switch self {
+        case .forYou: return "For You"
+        case .category(let c): return c.title
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .forYou: return "sparkles"
+        case .category(let c): return c.symbol
+        }
+    }
+
+    var games: [GameID] {
+        switch self {
+        case .forYou: return []
+        case .category(let c): return GameID.inCategory(c)
+        }
+    }
+}
+
 enum LauncherItem: Hashable {
     case game(GameID)
     case daily
+    case page(LauncherPage)
     case trophies
     case settings
+    case quit
 
-    /// Header buttons highlight on hover but only open on click.
+    /// Only games launch on hover; pages switch after a short dwell; buttons need a click.
     var launchesOnHover: Bool {
         switch self {
         case .game, .daily: return true
-        case .trophies, .settings: return false
+        case .page, .trophies, .settings, .quit: return false
         }
     }
 }
@@ -66,7 +97,7 @@ struct TickerInfo: Equatable {
 @Observable
 final class ArcadeController {
     static let earWidth: CGFloat = 46
-    static let maxContent = CGSize(width: 720, height: 396)
+    static let maxContent = CGSize(width: 780, height: 396)
     static let shadowPadding: CGFloat = 48
 
     private(set) var mode: NotchMode = .closed
@@ -80,17 +111,22 @@ final class ArcadeController {
     private(set) var daily: DailyChallenge
     private(set) var showTicker: Bool
     private(set) var isFocused = false
+    private(set) var page: LauncherPage = .forYou
+    /// The quit button was clicked once; a second click within a few seconds quits.
+    private(set) var quitArmed = false
+    var trophiesTab: TrophiesTab = .achievements
     var save: ArcadeSave
 
     @ObservationIgnored var itemFrames: [LauncherItem: CGRect] = [:]
-    @ObservationIgnored var panelSize = CGSize(width: 816, height: 480)
-    let leaderboard = LeaderboardService()
+    @ObservationIgnored var panelSize = CGSize(width: 876, height: 480)
 
     private let store: SaveStore
     @ObservationIgnored private var sessions: [String: GameSession] = [:]
     @ObservationIgnored private var openTask: Task<Void, Never>?
     @ObservationIgnored private var closeTask: Task<Void, Never>?
     @ObservationIgnored private var chargeTask: Task<Void, Never>?
+    @ObservationIgnored private var pageTask: Task<Void, Never>?
+    @ObservationIgnored private var quitTask: Task<Void, Never>?
     @ObservationIgnored private var toastTask: Task<Void, Never>?
     @ObservationIgnored private var toastQueue: [Toast] = []
     @ObservationIgnored private var hoverSuppressed = false
@@ -102,6 +138,7 @@ final class ArcadeController {
     @ObservationIgnored var resignFocus: () -> Void = {}
     @ObservationIgnored var modeChanged: (NotchMode) -> Void = { _ in }
     @ObservationIgnored var openSettings: () -> Void = {}
+    @ObservationIgnored var quitApp: () -> Void = {}
     @ObservationIgnored var shareRequested: (GameSession, RunSummary) -> Void = { _, _ in }
 
     init(store: SaveStore) {
@@ -129,13 +166,12 @@ final class ArcadeController {
             if toast != nil { return CGSize(width: max(base.width + 150, 380), height: h + 44) }
             return base
         case .launcher:
-            return CGSize(width: 680, height: h + 246)
+            return CGSize(width: 780, height: h + 276)
         case .trophies:
-            return CGSize(width: 680, height: h + 304)
+            return CGSize(width: 780, height: h + 300)
         case .game(let game):
-            return game == .solitaire
-                ? CGSize(width: Self.maxContent.width, height: h + Self.maxContent.height)
-                : CGSize(width: 700, height: h + 292)
+            let field = GameScreen.fieldSize(for: game)
+            return CGSize(width: field.width + (field.width >= 680 ? 40 : 60), height: h + field.height + 54)
         }
     }
 
@@ -221,9 +257,20 @@ final class ArcadeController {
         guard item != hovered else { return }
         hovered = item
         cancelCharge()
+        pageTask?.cancel()
+        pageTask = nil
         guard let item else { return }
         selection = item
         SoundEngine.shared.play(.tick)
+        if case .page(let target) = item, target != page {
+            // A short dwell so sweeping across the sidebar doesn't flip every page.
+            pageTask = Task { @MainActor [weak self] in
+                try? await Task.sleep(nanoseconds: 120_000_000)
+                guard let self, !Task.isCancelled, self.hovered == item else { return }
+                self.show(target)
+            }
+            return
+        }
         guard item.launchesOnHover, let delay = Prefs.hoverLaunch.delay else { return }
         chargeDuration = delay
         charging = item
@@ -256,6 +303,7 @@ final class ArcadeController {
         refreshDaily()
         pointerEntered = !focus
         hovered = nil
+        if focus { selection = firstItem(on: page) }
         setMode(.launcher)
         if focus { requestFocus() }
     }
@@ -270,7 +318,15 @@ final class ArcadeController {
 
     func showTrophies() {
         cancelCharge()
+        disarmQuit()
         setMode(.trophies)
+    }
+
+    /// Switches the launcher page.
+    func show(_ newPage: LauncherPage) {
+        guard newPage != page else { return }
+        withAnimation(Theme.snappy) { page = newPage }
+        SoundEngine.shared.play(.select)
     }
 
     /// Back to the plain notch. Pauses any game.
@@ -278,6 +334,9 @@ final class ArcadeController {
         cancelOpen()
         cancelClose()
         cancelCharge()
+        disarmQuit()
+        pageTask?.cancel()
+        pageTask = nil
         hovered = nil
         if case .game = mode {
             activeSession?.pause()
@@ -317,10 +376,40 @@ final class ArcadeController {
         switch item {
         case .game(let game): launch(game)
         case .daily: launch(daily.game, daily: true)
+        case .page(let p):
+            selection = item
+            show(p)
         case .trophies: showTrophies()
         case .settings:
             close()
             openSettings()
+        case .quit:
+            if quitArmed {
+                quitApp()
+            } else {
+                armQuit()
+            }
+        }
+    }
+
+    // MARK: - Quit
+
+    private func armQuit() {
+        withAnimation(Theme.snappy) { quitArmed = true }
+        SoundEngine.shared.play(.select)
+        quitTask?.cancel()
+        quitTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 3_000_000_000)
+            guard let self, !Task.isCancelled else { return }
+            self.disarmQuit()
+        }
+    }
+
+    private func disarmQuit() {
+        quitTask?.cancel()
+        quitTask = nil
+        if quitArmed {
+            withAnimation(Theme.snappy) { quitArmed = false }
         }
     }
 
@@ -342,6 +431,7 @@ final class ArcadeController {
         if session.phase == .over { session.restart() }
         activeSession = session
         save.stats.gameLaunches += 1
+        save.stats.noteLaunch(game)
         if game.category == .idle {
             save.stats.plays[game.rawValue, default: 0] += 1
         }
@@ -366,6 +456,15 @@ final class ArcadeController {
         case .twenty48: engine = Twenty48Engine(seed: seed)
         case .mines: engine = MinesEngine(seed: seed)
         case .reaction: engine = ReactionEngine(seed: seed)
+        case .invaders: engine = InvadersEngine(seed: seed)
+        case .astro: engine = AstroEngine(seed: seed)
+        case .trails: engine = TrailsEngine(seed: seed)
+        case .stack: engine = StackEngine(seed: seed)
+        case .gems: engine = GemsEngine(seed: seed)
+        case .sudoku: engine = SudokuEngine(seed: seed, difficulty: daily == nil ? Prefs.sudokuDifficulty : .medium)
+        case .lexi: engine = LexiEngine(seed: seed)
+        case .typer: engine = TyperEngine(seed: seed)
+        case .four: engine = FourEngine(seed: seed)
         case .solitaire: engine = SolitaireEngine(seed: seed, drawCount: Prefs.drawThree ? 3 : 1)
         case .arcade: engine = ArcadeEngine(featured: ArcadeMini.featured(on: Date()))
         case .miner:
@@ -468,7 +567,9 @@ final class ArcadeController {
         if result.isPersonalBest && result.previousBest != nil && session.game != .reaction {
             SoundEngine.shared.play(.levelUp)
         }
-        leaderboard.submit(board: board, value: value, profile: save.profile)
+        if let sudoku = session.engine as? SudokuEngine, !session.isDaily {
+            Prefs.sudokuDifficulty = sudoku.difficulty
+        }
         checkAchievements()
         persist()
     }
@@ -498,7 +599,13 @@ final class ArcadeController {
         }
 
         switch mode {
-        case .closed, .trophies:
+        case .closed:
+            return false
+        case .trophies:
+            if case .game(let k) = key, k == .left || k == .confirm {
+                open(focus: true)
+                return true
+            }
             return false
         case .launcher:
             if case .game(let k) = key { return launcherKey(k) }
@@ -524,33 +631,73 @@ final class ArcadeController {
         activeSession?.release(key)
     }
 
-    static let launcherRows: [[LauncherItem]] = [
-        [.trophies, .settings],
-        [.game(.runner), .game(.snake), .game(.pong), .game(.breakout), .game(.twenty48), .game(.mines), .game(.reaction)],
-        [.game(.miner), .game(.farm), .game(.solitaire), .game(.arcade), .daily],
-    ]
+    /// True while the active game takes typed letters, so P, M and S type instead.
+    var wantsTextInput: Bool {
+        guard case .game = mode, let session = activeSession else { return false }
+        return session.engine.acceptsText && session.phase != .over
+    }
+
+    /// The first thing to select on a page.
+    func firstItem(on page: LauncherPage) -> LauncherItem {
+        switch page {
+        case .forYou: return .daily
+        case .category: return page.games.first.map { .game($0) } ?? .page(page)
+        }
+    }
 
     private func launcherKey(_ key: GameKey) -> Bool {
-        let rows = Self.launcherRows
-        var r = rows.firstIndex { $0.contains(selection) } ?? 1
-        var c = rows[r].firstIndex(of: selection) ?? 0
         switch key {
-        case .left: c = (c - 1 + rows[r].count) % rows[r].count
-        case .right: c = (c + 1) % rows[r].count
-        case .up, .down:
-            let fraction = Double(c) / Double(max(1, rows[r].count - 1))
-            r = key == .up ? max(0, r - 1) : min(rows.count - 1, r + 1)
-            c = Int((fraction * Double(rows[r].count - 1)).rounded())
         case .primary, .confirm:
             activate(selection)
+            return true
+        case .cycle:
+            let pages = LauncherPage.all
+            let next = pages[((pages.firstIndex(of: page) ?? 0) + 1) % pages.count]
+            show(next)
+            if case .page = selection { selection = .page(next) } else { selection = firstItem(on: next) }
+            return true
+        case .left, .right, .up, .down:
+            guard let next = Self.neighbour(of: selection, toward: key, in: itemFrames) else {
+                if itemFrames[selection] == nil { selection = firstItem(on: page) }
+                return true
+            }
+            cancelCharge()
+            disarmQuit()
+            selection = next
+            if case .page(let p) = next { show(p) }
+            SoundEngine.shared.play(.tick)
             return true
         default:
             return false
         }
-        cancelCharge()
-        selection = rows[r][c]
-        SoundEngine.shared.play(.tick)
-        return true
+    }
+
+    /// Spatial keyboard navigation: the closest item in the direction of the arrow.
+    static func neighbour(of item: LauncherItem, toward key: GameKey, in frames: [LauncherItem: CGRect]) -> LauncherItem? {
+        guard let from = frames[item] else { return nil }
+        var best: (item: LauncherItem, cost: CGFloat)?
+        for (candidate, rect) in frames where candidate != item {
+            let dx = rect.midX - from.midX
+            let dy = rect.midY - from.midY
+            let along: CGFloat, across: CGFloat
+            switch key {
+            case .left: along = -dx; across = abs(dy)
+            case .right: along = dx; across = abs(dy)
+            case .up: along = -dy; across = abs(dx)
+            case .down: along = dy; across = abs(dx)
+            default: return nil
+            }
+            // Overlapping rows or columns count as aligned.
+            let overlap: Bool
+            switch key {
+            case .left, .right: overlap = rect.maxY > from.minY + 2 && rect.minY < from.maxY - 2
+            default: overlap = rect.maxX > from.minX + 2 && rect.minX < from.maxX - 2
+            }
+            guard along > 4 else { continue }
+            let cost = along + (overlap ? 0 : across * 2.5 + 40)
+            if best == nil || cost < best!.cost { best = (candidate, cost) }
+        }
+        return best?.item
     }
 
     // MARK: - Achievements & toasts
@@ -599,6 +746,24 @@ final class ArcadeController {
 
     var dailyBest: Int? {
         save.scores.bestDaily(daily.game.rawValue, on: Date())
+    }
+
+    /// Six games for the For You page: recent ones first, then new games you haven't tried.
+    var forYouGames: [GameID] {
+        var picks: [GameID] = []
+        func add(_ game: GameID) {
+            if picks.count < 6 && !picks.contains(game) { picks.append(game) }
+        }
+        for game in save.stats.recentGames.prefix(3) { add(game) }
+        let curated: [GameID] = [.stack, .lexi, .invaders, .gems, .four, .astro, .sudoku, .typer, .trails]
+        for game in curated where save.stats.plays[game.rawValue] == nil { add(game) }
+        for game in [GameID.runner, .snake, .twenty48, .breakout, .solitaire, .miner] + curated { add(game) }
+        return picks
+    }
+
+    /// Unplayed new games get a badge.
+    func isUnplayedNew(_ game: GameID) -> Bool {
+        game.isNew && save.stats.plays[game.rawValue] == nil
     }
 
     var dailyDone: Bool {
@@ -669,8 +834,10 @@ final class ArcadeController {
 
     // MARK: - Preview rendering hooks
 
-    func previewState(mode: NotchMode, hovered: LauncherItem? = nil, charging: LauncherItem? = nil, focused: Bool = false, toast: Toast? = nil) {
+    func previewState(mode: NotchMode, page: LauncherPage = .forYou, hovered: LauncherItem? = nil, charging: LauncherItem? = nil, focused: Bool = false, toast: Toast? = nil, quitArmed: Bool = false) {
         self.mode = mode
+        self.page = page
+        self.quitArmed = quitArmed
         self.hovered = hovered
         self.charging = charging
         self.isFocused = focused

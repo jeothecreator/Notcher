@@ -45,6 +45,47 @@ struct GameGlyph: View {
                     )
             case .mines:
                 MineGlyph()
+            case .invaders:
+                InvaderGlyph()
+            case .astro:
+                AstroGlyph()
+                    .stroke(style: StrokeStyle(lineWidth: size * 0.085, lineCap: .round, lineJoin: .round))
+            case .trails:
+                ZStack {
+                    TrailsGlyph()
+                        .stroke(style: StrokeStyle(lineWidth: size * 0.11, lineCap: .round, lineJoin: .round))
+                    Circle()
+                        .frame(width: size * 0.22, height: size * 0.22)
+                        .offset(x: size * 0.4, y: -size * 0.35)
+                }
+            case .stack:
+                StackGlyph()
+            case .gems:
+                ZStack {
+                    GemGlyph()
+                    GemFacets()
+                        .stroke(Color.black.opacity(0.32), style: StrokeStyle(lineWidth: max(0.75, size * 0.045), lineJoin: .round))
+                }
+            case .sudoku:
+                ZStack {
+                    SudokuGlyph()
+                        .stroke(style: StrokeStyle(lineWidth: max(1, size * 0.07), lineJoin: .round))
+                    SudokuGlyph.filledCells()
+                }
+            case .lexi:
+                ZStack {
+                    LexiGlyph(filled: true)
+                    LexiGlyph(filled: false)
+                        .stroke(style: StrokeStyle(lineWidth: max(0.8, size * 0.06)))
+                        .opacity(0.6)
+                }
+            case .four:
+                ZStack {
+                    FourGlyph(filled: true)
+                    FourGlyph(filled: false)
+                        .stroke(style: StrokeStyle(lineWidth: max(0.8, size * 0.05)))
+                        .opacity(0.45)
+                }
             default:
                 Image(systemName: "gamecontroller.fill")
                     .font(.system(size: size * 0.8, weight: .semibold))
@@ -114,6 +155,194 @@ struct MineGlyph: Shape {
             let spike = Path(roundedRect: CGRect(x: -spikeWidth / 2, y: -spikeLength, width: spikeWidth, height: spikeLength * 2), cornerRadius: spikeWidth / 2)
             let t = CGAffineTransform(translationX: c.x, y: c.y).rotated(by: angle)
             p.addPath(spike, transform: t)
+        }
+        return p
+    }
+}
+
+/// The classic crab, as pixels.
+struct InvaderGlyph: Shape {
+    static let rows = [
+        "..X.....X..",
+        "...X...X...",
+        "..XXXXXXX..",
+        ".XX.XXX.XX.",
+        "XXXXXXXXXXX",
+        "X.XXXXXXX.X",
+        "X.X.....X.X",
+        "...XX.XX...",
+    ]
+
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        let px = min(r.width / 11, r.height / 8)
+        let ox = r.midX - px * 5.5, oy = r.midY - px * 4
+        for (y, row) in Self.rows.enumerated() {
+            for (x, c) in row.enumerated() where c == "X" {
+                p.addRect(CGRect(x: ox + CGFloat(x) * px, y: oy + CGFloat(y) * px, width: px + 0.2, height: px + 0.2))
+            }
+        }
+        return p
+    }
+}
+
+/// A jagged rock and a little ship.
+struct AstroGlyph: Shape {
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        let w = r.width, h = r.height
+        let center = CGPoint(x: r.minX + w * 0.6, y: r.minY + h * 0.4)
+        let radii: [CGFloat] = [0.34, 0.27, 0.33, 0.24, 0.31, 0.36, 0.26, 0.32]
+        for (i, k) in radii.enumerated() {
+            let a = Double(i) / Double(radii.count) * 2 * .pi
+            let pt = CGPoint(x: center.x + cos(a) * w * k, y: center.y + sin(a) * h * k)
+            if i == 0 { p.move(to: pt) } else { p.addLine(to: pt) }
+        }
+        p.closeSubpath()
+        p.move(to: CGPoint(x: r.minX + w * 0.08, y: r.minY + h * 0.95))
+        p.addLine(to: CGPoint(x: r.minX + w * 0.2, y: r.minY + h * 0.62))
+        p.addLine(to: CGPoint(x: r.minX + w * 0.32, y: r.minY + h * 0.95))
+        p.addLine(to: CGPoint(x: r.minX + w * 0.2, y: r.minY + h * 0.86))
+        p.closeSubpath()
+        return p
+    }
+}
+
+struct TrailsGlyph: Shape {
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        let w = r.width, h = r.height
+        p.move(to: CGPoint(x: r.minX + w * 0.1, y: r.minY + h * 0.9))
+        p.addLine(to: CGPoint(x: r.minX + w * 0.1, y: r.minY + h * 0.5))
+        p.addLine(to: CGPoint(x: r.minX + w * 0.5, y: r.minY + h * 0.5))
+        p.addLine(to: CGPoint(x: r.minX + w * 0.5, y: r.minY + h * 0.15))
+        p.addLine(to: CGPoint(x: r.minX + w * 0.72, y: r.minY + h * 0.15))
+        return p
+    }
+}
+
+struct StackGlyph: Shape {
+    static let cells = [(0, 0), (1, 0), (2, 0), (1, 1), (0, 2), (2, 2), (3, 2), (0, 3), (1, 3), (2, 3), (3, 3)]
+
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        let cell = min(r.width, r.height) / 4
+        let gap = cell * 0.14
+        let ox = r.midX - cell * 2, oy = r.midY - cell * 2
+        for (x, y) in Self.cells {
+            let rect = CGRect(x: ox + CGFloat(x) * cell + gap / 2, y: oy + CGFloat(y) * cell + gap / 2, width: cell - gap, height: cell - gap)
+            p.addRoundedRect(in: rect, cornerSize: CGSize(width: cell * 0.18, height: cell * 0.18))
+        }
+        return p
+    }
+}
+
+struct GemGlyph: Shape {
+    static func outline(_ r: CGRect) -> [CGPoint] {
+        let w = r.width, h = r.height
+        return [
+            CGPoint(x: r.minX + w * 0.28, y: r.minY + h * 0.16),
+            CGPoint(x: r.minX + w * 0.72, y: r.minY + h * 0.16),
+            CGPoint(x: r.minX + w * 0.94, y: r.minY + h * 0.4),
+            CGPoint(x: r.minX + w * 0.5, y: r.minY + h * 0.9),
+            CGPoint(x: r.minX + w * 0.06, y: r.minY + h * 0.4),
+        ]
+    }
+
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        p.addLines(Self.outline(r))
+        p.closeSubpath()
+        return p
+    }
+}
+
+struct GemFacets: Shape {
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        let w = r.width, h = r.height
+        let o = GemGlyph.outline(r)
+        p.move(to: o[4])
+        p.addLine(to: o[2])
+        let a = CGPoint(x: r.minX + w * 0.38, y: r.minY + h * 0.4)
+        let b = CGPoint(x: r.minX + w * 0.62, y: r.minY + h * 0.4)
+        p.move(to: o[0]); p.addLine(to: a); p.addLine(to: o[3])
+        p.move(to: o[1]); p.addLine(to: b); p.addLine(to: o[3])
+        return p
+    }
+}
+
+/// A 3×3 box with a couple of cells filled in.
+struct SudokuGlyph: Shape {
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        let s = min(r.width, r.height) * 0.86
+        let box = CGRect(x: r.midX - s / 2, y: r.midY - s / 2, width: s, height: s)
+        p.addRoundedRect(in: box, cornerSize: CGSize(width: s * 0.16, height: s * 0.16))
+        for i in 1...2 {
+            let t = CGFloat(i) / 3
+            p.move(to: CGPoint(x: box.minX + s * t, y: box.minY))
+            p.addLine(to: CGPoint(x: box.minX + s * t, y: box.maxY))
+            p.move(to: CGPoint(x: box.minX, y: box.minY + s * t))
+            p.addLine(to: CGPoint(x: box.maxX, y: box.minY + s * t))
+        }
+        return p
+    }
+
+    struct Cells: Shape {
+        func path(in r: CGRect) -> Path {
+            var p = Path()
+            let s = min(r.width, r.height) * 0.86
+            let box = CGRect(x: r.midX - s / 2, y: r.midY - s / 2, width: s, height: s)
+            let c = s / 3
+            for (x, y) in [(0, 0), (2, 1), (1, 2)] {
+                p.addRoundedRect(
+                    in: CGRect(x: box.minX + CGFloat(x) * c + c * 0.22, y: box.minY + CGFloat(y) * c + c * 0.22, width: c * 0.56, height: c * 0.56),
+                    cornerSize: CGSize(width: c * 0.12, height: c * 0.12)
+                )
+            }
+            return p
+        }
+    }
+
+    static func filledCells() -> Cells { Cells() }
+}
+
+/// Two rows of letter tiles: the top one solved.
+struct LexiGlyph: Shape {
+    let filled: Bool
+
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        let t = min(r.width, r.height) * 0.28
+        let gap = t * 0.18
+        let total = t * 3 + gap * 2
+        let ox = r.midX - total / 2
+        let rowY: CGFloat = filled ? r.midY - t - gap / 2 : r.midY + gap / 2
+        for i in 0..<3 {
+            p.addRoundedRect(
+                in: CGRect(x: ox + CGFloat(i) * (t + gap), y: rowY, width: t, height: t),
+                cornerSize: CGSize(width: t * 0.22, height: t * 0.22)
+            )
+        }
+        return p
+    }
+}
+
+/// A 3×3 rack with a winning diagonal.
+struct FourGlyph: Shape {
+    let filled: Bool
+
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        let s = min(r.width, r.height)
+        let d = s / 3
+        let ox = r.midX - s / 2, oy = r.midY - s / 2
+        for y in 0..<3 {
+            for x in 0..<3 where (x + y == 2) == filled {
+                let inset = filled ? d * 0.08 : d * 0.18
+                p.addEllipse(in: CGRect(x: ox + CGFloat(x) * d + inset, y: oy + CGFloat(y) * d + inset, width: d - inset * 2, height: d - inset * 2))
+            }
         }
         return p
     }

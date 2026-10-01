@@ -19,6 +19,13 @@ public final class GemsEngine: EngineBase, GameEngine {
         public var offset: Vec2
         var start: Vec2 = .zero
         var fallSpeed = 0.0
+
+        public init(id: Int, kind: Int, special: Special = .none, offset: Vec2 = .zero) {
+            self.id = id
+            self.kind = kind
+            self.special = special
+            self.offset = offset
+        }
     }
 
     enum Stage {
@@ -144,7 +151,8 @@ public final class GemsEngine: EngineBase, GameEngine {
     }
 
     /// A pair of cells whose swap makes a match, or nil.
-    func findMove() -> (GridPoint, GridPoint)? {
+    /// Any swap that makes a match, or nil when the board is stuck.
+    public func findMove() -> (GridPoint, GridPoint)? {
         for y in 0..<Self.size {
             for x in 0..<Self.size {
                 for (dx, dy) in [(1, 0), (0, 1)] {

@@ -44,6 +44,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.arcade = arcade
         notch = NotchWindowController(arcade: arcade)
         arcade.openSettings = { [weak self] in self?.showSettings() }
+        arcade.quitApp = { NSApp.terminate(nil) }
 
         applyPrefs()
         defaultsObserver = NotificationCenter.default.addObserver(

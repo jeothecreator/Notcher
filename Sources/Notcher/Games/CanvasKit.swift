@@ -83,3 +83,28 @@ func drawDotGrid(_ ctx: GraphicsContext, size: CGSize, spacing: CGFloat, color: 
     }
     ctx.fill(path, with: .color(color))
 }
+
+/// Maps view points into a Canvas scene drawn with `fit(_:in:)`.
+struct SceneMapping {
+    let logical: CGSize
+    let size: CGSize
+
+    func point(_ p: CGPoint) -> CGPoint {
+        let s = min(size.width / logical.width, size.height / logical.height)
+        let ox = (size.width - logical.width * s) / 2
+        let oy = (size.height - logical.height * s) / 2
+        return CGPoint(x: (p.x - ox) / s, y: (p.y - oy) / s)
+    }
+}
+
+/// Small caps label used in game side panels.
+func panelLabel(_ text: String, in ctx: GraphicsContext, at point: CGPoint, anchor: UnitPoint = .topLeading, opacity: Double = 0.34) {
+    let label = Text(text.uppercased()).font(.system(size: 8, weight: .heavy, design: .rounded)).tracking(1.2).foregroundStyle(Color.white.opacity(opacity))
+    ctx.draw(label, at: point, anchor: anchor)
+}
+
+/// A big monospaced value for side panels.
+func panelValue(_ text: String, in ctx: GraphicsContext, at point: CGPoint, size: CGFloat = 20, color: Color = .white, anchor: UnitPoint = .topLeading) {
+    let value = Text(text).font(.system(size: size, weight: .heavy, design: .rounded).monospacedDigit()).foregroundStyle(color)
+    ctx.draw(value, at: point, anchor: anchor)
+}

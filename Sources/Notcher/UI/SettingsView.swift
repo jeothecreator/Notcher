@@ -1,3 +1,4 @@
+import AppKit
 import NotcherCore
 import ServiceManagement
 import SwiftUI
@@ -15,8 +16,7 @@ struct SettingsView: View {
     @AppStorage(Prefs.Key.menuBarIcon) private var menuBarIcon = true
     @AppStorage(Prefs.Key.drawThree) private var drawThree = false
     @AppStorage(Prefs.Key.display) private var display = DisplayChoice.automatic.rawValue
-    @AppStorage(Prefs.Key.leaderboardURL) private var leaderboardURL = ""
-    @AppStorage(Prefs.Key.leaderboardKey) private var leaderboardKey = ""
+    @AppStorage(Prefs.Key.sudokuDifficulty) private var sudokuDifficulty = SudokuEngine.Difficulty.medium.rawValue
 
     @State private var nickname = ""
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
@@ -83,6 +83,12 @@ struct SettingsView: View {
                 .onChange(of: drawThree) { _, _ in
                     arcade.discardSession(.solitaire)
                 }
+                Picker("Sudoku", selection: $sudokuDifficulty) {
+                    ForEach(SudokuEngine.Difficulty.allCases, id: \.rawValue) { Text($0.title).tag($0.rawValue) }
+                }
+                .onChange(of: sudokuDifficulty) { _, _ in
+                    arcade.discardSession(.sudoku)
+                }
             }
 
             Section("Player") {
@@ -93,15 +99,7 @@ struct SettingsView: View {
                 }
                 TextField("Nickname", text: $nickname, prompt: Text("Optional"))
                     .onSubmit { arcade.setNickname(nickname) }
-                Text("No account, no subscription. Your ID is anonymous; a nickname is only used on share cards and global leaderboards.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
-
-            Section("Global leaderboards") {
-                TextField("Server URL", text: $leaderboardURL, prompt: Text("https://your-project.supabase.co"))
-                SecureField("Public API key", text: $leaderboardKey)
-                Text("Optional. Point Notcher at a Supabase project created with Backend/supabase.sql to share scores. Without it, leaderboards stay on this Mac.")
+                Text("No account, no subscription. Your ID is anonymous and everything stays on this Mac; a nickname only appears on share cards.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
@@ -120,8 +118,15 @@ struct SettingsView: View {
                         }
                     }
                 Toggle("Show menu bar icon", isOn: $menuBarIcon)
-                Button("Reset all progress…", role: .destructive) {
-                    confirmReset = true
+                HStack {
+                    Button("Reset all progress…", role: .destructive) {
+                        confirmReset = true
+                    }
+                    Spacer()
+                    Button("Quit Notcher") {
+                        NSApp.terminate(nil)
+                    }
+                    .keyboardShortcut("q", modifiers: .command)
                 }
             }
         }
