@@ -77,7 +77,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             MainActor.assumeIsolated { self?.applyPrefs() }
         }
 
-        if !Prefs.defaults.bool(forKey: Prefs.Key.onboarded) {
+        let returning = Prefs.defaults.bool(forKey: Prefs.Key.onboarded)
+        if Prefs.migrateToClickLaunch() && returning {
+            arcade.showToast(Toast(
+                symbol: "cursorarrow.click.2", title: "Games now start when you click",
+                subtitle: "Prefer hover? Switch back in Settings", colors: GameID.arcade.style.colors
+            ))
+        }
+
+        if !returning {
             Prefs.defaults.set(true, forKey: Prefs.Key.onboarded)
             arcade.showToast(Toast(
                 symbol: "gamecontroller.fill", title: "Hover the notch to play",

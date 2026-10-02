@@ -23,7 +23,7 @@ enum PreviewRenderer {
         arcade.previewState(mode: .closed)
         shot("01-closed")
 
-        arcade.previewState(mode: .launcher, hovered: .game(.stack), charging: .game(.stack))
+        arcade.previewState(mode: .launcher, hovered: .game(.stack))
         shot("02-launcher")
 
         arcade.previewState(mode: .launcher, page: .category(.action), hovered: .game(.invaders))
@@ -201,7 +201,7 @@ enum PreviewRenderer {
             shot("49-console-paused")
             arcade.previewFinishConsole(seconds: 4_380)
             arcade.previewClearToasts()
-            arcade.previewState(mode: .launcher, page: .library, hovered: .rom(id), charging: .rom(id))
+            arcade.previewState(mode: .launcher, page: .library, hovered: .rom(id))
             shot("45-library")
             arcade.previewState(mode: .launcher, hovered: .rom(id))
             shot("44-for-you-continue")

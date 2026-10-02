@@ -13,7 +13,7 @@ Drag a NES or Game Boy ROM onto the MacBook notch and it plays right there. Or h
 
 Notcher turns the notch into a small arcade that behaves like the Dynamic Island. It's built for the half-minute gaps in a workday: waiting on an AI agent, a build, a download or a compile.
 
-**Hover → Choose → Play → Esc → Back to work.**
+**Hover → Click → Play → Esc → Back to work.**
 
 <p align="center">
   <img src="docs/screenshots/console-nes.jpg" width="720" alt="A NES game running in the notch, with the D-pad and buttons lighting up on either side">
@@ -59,7 +59,7 @@ Notcher doesn't include or download any commercial games. Only play ROMs of game
 
 - **Hover to open.** The notch grows sideways, then down, and the games fade in.
 - **Pick a page.** For You shows today's challenge, the ROM you played last and your recent games. Library holds your ROMs; Action, Puzzle, Brain and Idle hold the built-in games. Resting on a page in the sidebar switches to it.
-- **Hover to launch.** Rest on a game for 0.3 s and it starts. A ring of light around the tile shows the countdown, and moving away cancels it.
+- **Click to play.** Click a game, or move to it with the arrow keys and press Return. Nothing starts just because the pointer passed over it, and a click that lands while the notch is still opening is ignored. If you'd rather start games by resting the pointer on them, pick **On hover** under **Settings → Notch → Start a game**: a ring of light around the tile then counts down, and moving away cancels it.
 - **Esc to leave.** Esc closes the game and hands keyboard focus back to the app you were in. Clicking anywhere else does the same.
 - **Quit from the notch.** The power button in the header asks once, then quits. Settings and the menu bar icon have a Quit button too.
 - **No Play button, no loading screen, no account.**
@@ -164,7 +164,7 @@ git pull
 make run
 ```
 
-The build prints `Building Notcher 0.2.0 (…)`, and the version also appears in Settings and at the bottom of the menu bar menu. Version 0.2.0 is the one with ROM support: its sidebar has a **Library** page.
+The build prints `Building Notcher <version> (…)` (the version comes from the `VERSION` file), and the version also appears in Settings and at the bottom of the menu bar menu. Versions from 0.2.0 on have ROM support: the sidebar has a **Library** page.
 
 Other targets: `make app` (build only), `make dmg` (build/Notcher.dmg), `make zip`, `make test`.
 
@@ -213,7 +213,7 @@ Sources/
 │   └── Meta/               Catalog, word lists, score book, stats, achievements, daily challenge, save file
 └── Notcher/                The macOS app (AppKit + SwiftUI)
     ├── App/                Notch panel, window controller, hotkey, key mapping, app delegate
-    ├── Arcade/             ArcadeController (notch state machine, hover-to-launch, drops), GameSession
+    ├── Arcade/             ArcadeController (notch state machine, launching, drops), GameSession
     ├── Console/            ROM sessions: emulation thread, frame pacing, audio, controllers
     ├── Services/           Sound synthesizer, save store, share cards, prefs
     ├── UI/                 Notch shape, launcher pages, game screen, trophies, settings
@@ -265,4 +265,4 @@ The core suite covers the emulators (CPU instructions and timing, PPU rendering,
 
 ---
 
-<p align="center"><i>Hover. Play. Esc. Back to work.</i></p>
+<p align="center"><i>Hover. Click. Play. Esc. Back to work.</i></p>

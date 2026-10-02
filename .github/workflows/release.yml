@@ -139,14 +139,10 @@ jobs:
                 echo "This build isn't signed with a Developer ID yet. The first time you open it, macOS will block it: go to **System Settings → Privacy & Security** and click **Open Anyway** next to Notcher. (Or run \`xattr -dr com.apple.quarantine /Applications/Notcher.app\` in Terminal.)" ;;
             esac
             echo
-            echo "### What's new"
-            echo
-            echo "- **Play your own ROMs.** Drag a NES, Game Boy or Game Boy Color ROM (or a zip) onto the notch and it plays right there. Esc saves your spot, battery saves are kept, and controllers work."
-            echo "- **Library page** with the last frame of each game as its poster, and a Continue card on For You."
-            echo "- **Three homebrew demo games** to try before adding your own: click *Try the demos* in the Library."
-            echo "- Built-in emulators that pass the standard CPU test ROMs, running on their own thread."
-            echo "- Nine new built-in games, a category launcher, a quit button in the notch, and four new achievements."
-            echo
+            if [ -f "docs/releases/$VERSION.md" ]; then
+              cat "docs/releases/$VERSION.md"
+              echo
+            fi
             echo "Notcher doesn't include any commercial games. Only play ROMs of games you own."
           } > build/release-notes.md
 

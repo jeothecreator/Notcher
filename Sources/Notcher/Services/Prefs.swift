@@ -2,16 +2,18 @@ import Carbon.HIToolbox
 import Foundation
 import NotcherCore
 
+/// How a game in the launcher starts. Clicking is the default, so passing
+/// the pointer over the notch never starts anything by accident.
 enum HoverLaunch: String, CaseIterable, Identifiable {
-    case fast, relaxed, click
+    case click, fast, relaxed
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
-        case .fast: return "Fast — 0.3 s"
-        case .relaxed: return "Relaxed — 0.6 s"
-        case .click: return "Click to launch"
+        case .click: return "When clicked"
+        case .fast: return "On hover, after 0.3 s"
+        case .relaxed: return "On hover, after 0.6 s"
         }
     }
 
@@ -131,6 +133,8 @@ enum ScreenFilter: String, CaseIterable, Identifiable {
 enum Prefs {
     enum Key {
         static let hoverLaunch = "hoverLaunch"
+        /// Set once the switch to click-to-play (0.2.1) has been applied.
+        static let clickLaunchMigrated = "clickLaunchMigrated"
         static let openDelay = "openDelay"
         static let showTicker = "showTicker"
         static let sound = "soundEnabled"
@@ -153,7 +157,7 @@ enum Prefs {
 
     static func register() {
         defaults.register(defaults: [
-            Key.hoverLaunch: HoverLaunch.fast.rawValue,
+            Key.hoverLaunch: HoverLaunch.click.rawValue,
             Key.openDelay: OpenDelay.instant.rawValue,
             Key.showTicker: true,
             Key.sound: true,
@@ -172,7 +176,7 @@ enum Prefs {
     }
 
     static var hoverLaunch: HoverLaunch {
-        HoverLaunch(rawValue: defaults.string(forKey: Key.hoverLaunch) ?? "") ?? .fast
+        HoverLaunch(rawValue: defaults.string(forKey: Key.hoverLaunch) ?? "") ?? .click
     }
 
     static var openDelay: OpenDelay {
@@ -210,6 +214,15 @@ enum Prefs {
 
     /// Reopening a ROM continues exactly where you pressed Esc.
     static var resumeROMs: Bool { defaults.bool(forKey: Key.resumeROMs) }
+
+    /// Games used to start on hover. Moves everyone to click-to-play once;
+    /// hover stays available in Settings. Returns true on the run that did it.
+    static func migrateToClickLaunch() -> Bool {
+        guard !defaults.bool(forKey: Key.clickLaunchMigrated) else { return false }
+        defaults.set(true, forKey: Key.clickLaunchMigrated)
+        defaults.removeObject(forKey: Key.hoverLaunch)
+        return true
+    }
 
     static func toggleSound() {
         defaults.set(!soundEnabled, forKey: Key.sound)

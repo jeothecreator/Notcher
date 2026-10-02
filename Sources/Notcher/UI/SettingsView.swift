@@ -6,7 +6,7 @@ import SwiftUI
 struct SettingsView: View {
     let arcade: ArcadeController
 
-    @AppStorage(Prefs.Key.hoverLaunch) private var hoverLaunch = HoverLaunch.fast.rawValue
+    @AppStorage(Prefs.Key.hoverLaunch) private var hoverLaunch = HoverLaunch.click.rawValue
     @AppStorage(Prefs.Key.openDelay) private var openDelay = OpenDelay.instant.rawValue
     @AppStorage(Prefs.Key.showTicker) private var showTicker = true
     @AppStorage(Prefs.Key.sound) private var sound = true
@@ -79,7 +79,7 @@ struct SettingsView: View {
                 Picker("Open when hovering", selection: $openDelay) {
                     ForEach(OpenDelay.allCases) { Text($0.title).tag($0.rawValue) }
                 }
-                Picker("Hover to launch", selection: $hoverLaunch) {
+                Picker("Start a game", selection: $hoverLaunch) {
                     ForEach(HoverLaunch.allCases) { Text($0.title).tag($0.rawValue) }
                 }
                 Toggle("Show live ticker beside the notch", isOn: $showTicker)

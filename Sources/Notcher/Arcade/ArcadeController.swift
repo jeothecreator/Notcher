@@ -175,6 +175,10 @@ final class ArcadeController {
     @ObservationIgnored private var hoverSuppressed = false
     @ObservationIgnored private var pointerEntered = false
     @ObservationIgnored private var pendingPlaySeconds = 0.0
+    /// When the launcher last opened. A click that arrives while it's still
+    /// growing was meant for whatever was under the notch, not for a game.
+    @ObservationIgnored private var openedAt = Date.distantPast
+    static let clickGuard: TimeInterval = 0.35
 
     // Hooks wired up by the window controller and app delegate.
     @ObservationIgnored var requestFocus: () -> Void = {}
@@ -368,6 +372,7 @@ final class ArcadeController {
         pointerEntered = !focus
         hovered = nil
         if focus { selection = firstItem(on: page) }
+        if mode == .closed { openedAt = Date() }
         setMode(.launcher)
         if focus { requestFocus() }
     }
@@ -441,6 +446,9 @@ final class ArcadeController {
     }
 
     func activate(_ item: LauncherItem) {
+        if item.launchesOnHover, Date().timeIntervalSince(openedAt) < Self.clickGuard {
+            return
+        }
         switch item {
         case .game(let game): launch(game)
         case .daily: launch(daily.game, daily: true)
