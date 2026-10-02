@@ -172,7 +172,7 @@ To hack on it in Xcode, run `open Package.swift`, choose the **Notcher** scheme 
 
 ### Releasing
 
-Pushing a tag such as `v0.2.0` runs the **Release** workflow, which builds a universal app, packs it into `Notcher.dmg` and publishes it as a GitHub release. You can also run it from the Actions tab for an existing tag.
+Pushing a tag such as `v0.2.0` runs the **Release** workflow, which builds a universal app, packs it into `Notcher.dmg` and publishes it as a GitHub release. You can also run it from the **Actions** tab (**Release → Run workflow**): give it a version tag, and the tag is created if it doesn't exist yet. Running it again for the same tag replaces the DMG, which is how you re-publish a release signed once the secrets below are in place.
 
 To sign and notarize releases with your own Developer ID, add these repository secrets (**Settings → Secrets and variables → Actions**):
 
