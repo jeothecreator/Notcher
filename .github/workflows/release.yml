@@ -2,9 +2,12 @@ name: Release
 
 # Builds Notcher.dmg and attaches it to a GitHub release.
 #
-# Push a tag (git tag v0.2.0 && git push origin v0.2.0), or run this workflow
-# by hand from the Actions tab: give it a tag, and if that tag doesn't exist
-# yet it's created on the commit you run it from.
+# Three ways to publish:
+#   - push a tag: git tag v0.2.0 && git push origin v0.2.0
+#   - push a commit whose message contains [release]: publishes v<VERSION file>
+#   - run it from the Actions tab with a tag
+# A tag that doesn't exist yet is created on the commit being built, and
+# publishing an existing tag again replaces its DMG.
 #
 # Signing and notarization use these repository secrets when they're set
 # (Settings → Secrets and variables → Actions):
@@ -19,6 +22,7 @@ name: Release
 on:
   push:
     tags: ['v*']
+    branches: ['**']
   workflow_dispatch:
     inputs:
       tag:
@@ -29,15 +33,19 @@ permissions:
   contents: write
 
 concurrency:
-  group: release-${{ github.event.inputs.tag || github.ref_name }}
+  group: release-${{ github.event.inputs.tag || github.ref }}
   cancel-in-progress: false
 
 jobs:
   dmg:
     name: Build, sign and publish Notcher.dmg
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      startsWith(github.ref, 'refs/tags/') ||
+      contains(github.event.head_commit.message, '[release]')
     runs-on: macos-15
     env:
-      TAG: ${{ github.event.inputs.tag || github.ref_name }}
+      TAG: ${{ github.event.inputs.tag || (startsWith(github.ref, 'refs/tags/') && github.ref_name) || '' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -45,6 +53,11 @@ jobs:
 
       - name: Check out the tag, if it already exists
         run: |
+          if [ -z "$TAG" ]; then
+            TAG="v$(tr -d '[:space:]' < VERSION)"
+            echo "TAG=$TAG" >> "$GITHUB_ENV"
+          fi
+          echo "Publishing $TAG"
           if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
             git checkout -q "$TAG"
             echo "Building existing tag $TAG ($(git rev-parse --short HEAD))"

@@ -4,7 +4,7 @@
 #   ./Scripts/build-app.sh --zip      → also build/Notcher.zip
 #
 # Environment:
-#   NOTCHER_VERSION        version string (default below)
+#   NOTCHER_VERSION        version string (default: the VERSION file)
 #   NOTCHER_UNIVERSAL=1    build for both Apple silicon and Intel
 #   NOTCHER_SIGN_IDENTITY  a "Developer ID Application: …" identity to sign
 #                          with (hardened runtime, ready for notarization);
@@ -13,7 +13,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 ROOT="$(pwd)"
-VERSION="${NOTCHER_VERSION:-0.2.0}"
+VERSION="${NOTCHER_VERSION:-$(cat VERSION 2>/dev/null || echo 0.0.0)}"
 BUILD="${NOTCHER_BUILD:-$(git rev-list --count HEAD 2>/dev/null || echo 1)}"
 OUT="$ROOT/build"
 APP="$OUT/Notcher.app"
