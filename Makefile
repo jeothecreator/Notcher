@@ -10,7 +10,7 @@ zip:
 	./Scripts/build-app.sh --zip
 
 run: app
-	open build/Notcher.app
+	./Scripts/run-app.sh
 
 test:
 	swift test

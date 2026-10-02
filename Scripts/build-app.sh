@@ -6,7 +6,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 ROOT="$(pwd)"
-VERSION="${NOTCHER_VERSION:-0.1.0}"
+VERSION="${NOTCHER_VERSION:-0.2.0}"
 BUILD="${NOTCHER_BUILD:-$(git rev-list --count HEAD 2>/dev/null || echo 1)}"
 OUT="$ROOT/build"
 APP="$OUT/Notcher.app"

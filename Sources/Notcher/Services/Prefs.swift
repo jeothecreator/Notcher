@@ -142,6 +142,8 @@ enum Prefs {
         static let display = "display"
         static let sudokuDifficulty = "sudokuDifficulty"
         static let onboarded = "onboarded"
+        /// The version that last ran, to greet people after an update.
+        static let lastVersion = "lastVersion"
         static let gbPalette = "gameBoyPalette"
         static let screenFilter = "screenFilter"
         static let resumeROMs = "resumeROMs"

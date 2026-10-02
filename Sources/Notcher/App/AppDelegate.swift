@@ -25,6 +25,23 @@ enum NotcherMain {
     }
 }
 
+/// The version baked into Info.plist by Scripts/build-app.sh.
+enum AppVersion {
+    static var short: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "dev"
+    }
+
+    static var build: String? {
+        Bundle.main.infoDictionary?["CFBundleVersion"] as? String
+    }
+
+    /// "0.2.0 (build 57)"
+    static var display: String {
+        guard let build, !build.isEmpty else { return short }
+        return "\(short) (build \(build))"
+    }
+}
+
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var store: SaveStore?
@@ -38,9 +55,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var defaultsObserver: NSObjectProtocol?
     /// Files opened before launch finished (Open With, or a drop on the app icon).
     private var pendingOpen: [URL] = []
+    private var terminationSignal: DispatchSourceSignal?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         Prefs.register()
+        quitOtherCopies()
+        quitCleanlyOnSIGTERM()
         let store = SaveStore()
         let arcade = ArcadeController(store: store)
         self.store = store
@@ -67,12 +87,42 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 symbol: "square.stack.3d.up.fill", title: "Drag a ROM onto the notch",
                 subtitle: "NES and Game Boy games play right here", colors: LauncherPage.library.colors
             ))
+        } else if Prefs.defaults.string(forKey: Prefs.Key.lastVersion) == nil {
+            // Updated from a version before ROM support.
+            arcade.showToast(Toast(
+                symbol: "sparkles", title: "New: play your own ROMs",
+                subtitle: "Notcher \(AppVersion.short) · drag a NES or Game Boy ROM onto the notch",
+                colors: LauncherPage.library.colors
+            ))
         }
+        Prefs.defaults.set(AppVersion.short, forKey: Prefs.Key.lastVersion)
 
         if !pendingOpen.isEmpty {
             arcade.importFiles(pendingOpen)
             pendingOpen = []
         }
+    }
+
+    /// Only one Notcher can own the notch. A newly launched copy (say, a
+    /// fresh build) asks any older one still in the menu bar to quit.
+    private func quitOtherCopies() {
+        guard let id = Bundle.main.bundleIdentifier else { return }
+        let me = ProcessInfo.processInfo.processIdentifier
+        for other in NSRunningApplication.runningApplications(withBundleIdentifier: id) where other.processIdentifier != me {
+            other.terminate()
+        }
+    }
+
+    /// `make run` replaces a running copy with SIGTERM; quit normally so
+    /// progress, battery saves and the ROM resume point are written first.
+    private func quitCleanlyOnSIGTERM() {
+        signal(SIGTERM, SIG_IGN)
+        let source = DispatchSource.makeSignalSource(signal: SIGTERM, queue: .main)
+        source.setEventHandler {
+            MainActor.assumeIsolated { NSApp.terminate(nil) }
+        }
+        source.resume()
+        terminationSignal = source
     }
 
     func application(_ application: NSApplication, open urls: [URL]) {
@@ -181,6 +231,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         settings.target = self
         menu.addItem(settings)
         menu.addItem(.separator())
+        let version = NSMenuItem(title: "Version \(AppVersion.display)", action: nil, keyEquivalent: "")
+        version.isEnabled = false
+        menu.addItem(version)
         let quit = NSMenuItem(title: "Quit Notcher", action: #selector(quit), keyEquivalent: "q")
         quit.target = self
         menu.addItem(quit)

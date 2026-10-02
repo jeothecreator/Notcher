@@ -145,8 +145,18 @@ Requirements: macOS 14 Sonoma or later, Xcode 16+ (Swift 5.9+).
 ```bash
 git clone https://github.com/jeothecreator/Notcher.git
 cd Notcher
-make run          # builds build/Notcher.app and opens it
+make run          # builds build/Notcher.app, quits any copy already running, opens the new one
 ```
+
+**Updating.** If you cloned before, `git clone` stops with "destination path 'Notcher' already exists", and `cd Notcher` lands in your old copy. Update it in place instead:
+
+```bash
+cd Notcher
+git pull
+make run
+```
+
+The build prints `Building Notcher 0.2.0 (…)`, and the version also appears in Settings and at the bottom of the menu bar menu. Version 0.2.0 is the one with ROM support: its sidebar has a **Library** page.
 
 Other targets: `make app` (build only), `make zip`, `make test`.
 

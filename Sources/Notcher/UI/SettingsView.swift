@@ -41,6 +41,10 @@ struct SettingsView: View {
                         Text("Your notch. Your arcade. Hover, play, Esc, back to work.")
                             .font(.system(size: 12))
                             .foregroundStyle(.secondary)
+                        Text("Version \(AppVersion.display)")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.tertiary)
+                            .textSelection(.enabled)
                     }
                 }
                 .padding(.vertical, 4)
