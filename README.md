@@ -7,6 +7,8 @@
 <p align="center"><b>Your notch. Your arcade.</b><br>
 Drag a NES or Game Boy ROM onto the MacBook notch and it plays right there. Or hover the notch for 20 built-in mini games. Esc takes you back to work.</p>
 
+<p align="center"><a href="https://github.com/jeothecreator/Notcher/releases/latest/download/Notcher.dmg"><b>⬇ Download Notcher for Mac</b></a> · macOS 14 or later</p>
+
 ---
 
 Notcher turns the notch into a small arcade that behaves like the Dynamic Island. It's built for the half-minute gaps in a workday: waiting on an AI agent, a build, a download or a compile.
@@ -138,7 +140,13 @@ Keys that work everywhere: `esc` back to work · `P` pause · `R` restart · `M`
   <img src="docs/screenshots/share-card.jpg" width="560" alt="A score card made with S after a run">
 </p>
 
-## Install & run
+## Download
+
+**[Download Notcher.dmg](https://github.com/jeothecreator/Notcher/releases/latest/download/Notcher.dmg)**, open it and drag Notcher into Applications. It runs on macOS 14 Sonoma or later, on Apple silicon and Intel Macs. Every release is listed on the [Releases page](https://github.com/jeothecreator/Notcher/releases).
+
+Release builds are signed with a Developer ID and notarized by Apple once signing is set up for the repository (see [Releasing](#releasing)). If a release says it isn't signed, macOS blocks it the first time: open **System Settings → Privacy & Security** and click **Open Anyway** next to Notcher.
+
+## Build from source
 
 Requirements: macOS 14 Sonoma or later, Xcode 16+ (Swift 5.9+).
 
@@ -148,7 +156,7 @@ cd Notcher
 make run          # builds build/Notcher.app, quits any copy already running, opens the new one
 ```
 
-**Updating.** If you cloned before, `git clone` stops with "destination path 'Notcher' already exists", and `cd Notcher` lands in your old copy. Update it in place instead:
+**Updating.** If you cloned before, `git clone` stops with "destination path 'Notcher' already exists", and `cd Notcher` lands in your old copy. Update it in place instead, or delete the old folder and clone again:
 
 ```bash
 cd Notcher
@@ -158,11 +166,39 @@ make run
 
 The build prints `Building Notcher 0.2.0 (…)`, and the version also appears in Settings and at the bottom of the menu bar menu. Version 0.2.0 is the one with ROM support: its sidebar has a **Library** page.
 
-Other targets: `make app` (build only), `make zip`, `make test`.
+Other targets: `make app` (build only), `make dmg` (build/Notcher.dmg), `make zip`, `make test`.
 
 To hack on it in Xcode, run `open Package.swift`, choose the **Notcher** scheme and press Run.
 
-Each CI run on macOS also uploads a ready-made `Notcher.zip`. It carries an ad-hoc signature, so macOS may block it the first time. Right-click the app and choose **Open**, or run `xattr -dr com.apple.quarantine Notcher.app`.
+### Releasing
+
+Pushing a tag such as `v0.2.0` runs the **Release** workflow, which builds a universal app, packs it into `Notcher.dmg` and publishes it as a GitHub release. You can also run it from the Actions tab for an existing tag.
+
+To sign and notarize releases with your own Developer ID, add these repository secrets (**Settings → Secrets and variables → Actions**):
+
+| Secret | What it is |
+|---|---|
+| `MACOS_CERTIFICATE` | Your **Developer ID Application** certificate and private key, exported from Keychain Access as a `.p12`, then base64-encoded |
+| `MACOS_CERTIFICATE_PASSWORD` | The password you chose when exporting the `.p12` |
+| `NOTARY_APPLE_ID` | The Apple ID email of your developer account |
+| `NOTARY_TEAM_ID` | Your 10-character team ID ([Membership details](https://developer.apple.com/account)) |
+| `NOTARY_PASSWORD` | An [app-specific password](https://account.apple.com) for that Apple ID |
+
+With the [GitHub CLI](https://cli.github.com), each command below prompts for its value, so secrets stay out of your shell history:
+
+```bash
+base64 -i DeveloperID.p12 | gh secret set MACOS_CERTIFICATE -R jeothecreator/Notcher
+gh secret set MACOS_CERTIFICATE_PASSWORD -R jeothecreator/Notcher
+gh secret set NOTARY_APPLE_ID -R jeothecreator/Notcher
+gh secret set NOTARY_TEAM_ID -R jeothecreator/Notcher
+gh secret set NOTARY_PASSWORD -R jeothecreator/Notcher
+```
+
+You can also sign on your own Mac without uploading anything: save your notary credentials once with `xcrun notarytool store-credentials notcher`, then run
+
+```bash
+NOTCHER_SIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)" NOTARY_PROFILE=notcher make dmg
+```
 
 Notcher runs as a menu bar agent: no Dock icon, with a 🎮 icon in the menu bar for Settings and Quit. The global shortcut **⌃⌥⌘G** opens the arcade with keyboard focus, and you can change it in Settings.
 

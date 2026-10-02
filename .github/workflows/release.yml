@@ -1,0 +1,140 @@
+name: Release
+
+# Builds Notcher.dmg and attaches it to a GitHub release.
+#
+# Push a tag (git tag v0.2.0 && git push origin v0.2.0) or run this workflow
+# by hand from the Actions tab with an existing tag.
+#
+# Signing and notarization use these repository secrets when they're set
+# (Settings → Secrets and variables → Actions):
+#   MACOS_CERTIFICATE           your "Developer ID Application" certificate as a
+#                               base64-encoded .p12
+#   MACOS_CERTIFICATE_PASSWORD  the password you gave the .p12 when exporting it
+#   NOTARY_APPLE_ID             your Apple ID email
+#   NOTARY_TEAM_ID              your 10-character Apple Developer team ID
+#   NOTARY_PASSWORD             an app-specific password for that Apple ID
+# Without them the DMG is still built and published, but unsigned.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag to build and publish, e.g. v0.2.0
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.event.inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  dmg:
+    name: Build, sign and publish Notcher.dmg
+    runs-on: macos-15
+    env:
+      TAG: ${{ github.event.inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - name: Select Xcode
+        run: |
+          sudo xcode-select -s "$(ls -d /Applications/Xcode_16*.app | sort -V | tail -1)"
+          swift --version
+
+      - name: Import the Developer ID certificate
+        id: cert
+        env:
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+        run: |
+          if [ -z "$MACOS_CERTIFICATE" ]; then
+            echo "::warning::No MACOS_CERTIFICATE secret, so this DMG is unsigned. See the comment at the top of release.yml."
+            echo "identity=-" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          KEYCHAIN="$RUNNER_TEMP/notcher.keychain-db"
+          KEYCHAIN_PASSWORD="$(uuidgen)"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          printf '%s' "$MACOS_CERTIFICATE" | base64 --decode > "$RUNNER_TEMP/certificate.p12"
+          security import "$RUNNER_TEMP/certificate.p12" -k "$KEYCHAIN" -P "$MACOS_CERTIFICATE_PASSWORD" \
+            -T /usr/bin/codesign -T /usr/bin/security
+          rm -f "$RUNNER_TEMP/certificate.p12"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN" >/dev/null
+          security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+          IDENTITY="$(security find-identity -v -p codesigning "$KEYCHAIN" | grep -o '"Developer ID Application: [^"]*"' | head -1 | tr -d '"')"
+          if [ -z "$IDENTITY" ]; then
+            echo "::error::MACOS_CERTIFICATE doesn't contain a 'Developer ID Application' certificate with its private key. These were found:"
+            security find-identity -v -p codesigning "$KEYCHAIN"
+            exit 1
+          fi
+          echo "Signing as: $IDENTITY"
+          echo "identity=$IDENTITY" >> "$GITHUB_OUTPUT"
+
+      - name: Build Notcher.app (Apple silicon and Intel)
+        env:
+          NOTCHER_UNIVERSAL: "1"
+          NOTCHER_SIGN_IDENTITY: ${{ steps.cert.outputs.identity }}
+        run: |
+          export NOTCHER_VERSION="${TAG#v}"
+          ./Scripts/build-app.sh
+          lipo -info build/Notcher.app/Contents/MacOS/Notcher
+
+      - name: Make the DMG (notarized when credentials are set)
+        env:
+          NOTCHER_SIGN_IDENTITY: ${{ steps.cert.outputs.identity }}
+          NOTARY_APPLE_ID: ${{ secrets.NOTARY_APPLE_ID }}
+          NOTARY_TEAM_ID: ${{ secrets.NOTARY_TEAM_ID }}
+          NOTARY_PASSWORD: ${{ secrets.NOTARY_PASSWORD }}
+        run: ./Scripts/make-dmg.sh
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${TAG#v}"
+          STATUS="$(cat build/dmg-status)"
+          {
+            echo "## Notcher $VERSION"
+            echo
+            echo "**Download Notcher.dmg below**, open it and drag Notcher into Applications. It runs on macOS 14 Sonoma or later, on Apple silicon and Intel Macs."
+            echo
+            case "$STATUS" in
+              notarized)
+                echo "This build is signed with a Developer ID and notarized by Apple, so it opens like any other app." ;;
+              signed)
+                echo "This build is signed with a Developer ID but not notarized yet. The first time you open it, macOS may ask you to confirm in **System Settings → Privacy & Security → Open Anyway**." ;;
+              *)
+                echo "This build isn't signed with a Developer ID yet. The first time you open it, macOS will block it: go to **System Settings → Privacy & Security** and click **Open Anyway** next to Notcher. (Or run \`xattr -dr com.apple.quarantine /Applications/Notcher.app\` in Terminal.)" ;;
+            esac
+            echo
+            echo "### What's new"
+            echo
+            echo "- **Play your own ROMs.** Drag a NES, Game Boy or Game Boy Color ROM (or a zip) onto the notch and it plays right there. Esc saves your spot, battery saves are kept, and controllers work."
+            echo "- **Library page** with the last frame of each game as its poster, and a Continue card on For You."
+            echo "- **Three homebrew demo games** to try before adding your own: click *Try the demos* in the Library."
+            echo "- Built-in emulators that pass the standard CPU test ROMs, running on their own thread."
+            echo "- Nine new built-in games, a category launcher, a quit button in the notch, and four new achievements."
+            echo
+            echo "Notcher doesn't include any commercial games. Only play ROMs of games you own."
+          } > build/release-notes.md
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" build/Notcher.dmg --clobber
+            gh release edit "$TAG" --title "Notcher $VERSION" --notes-file build/release-notes.md
+          else
+            gh release create "$TAG" build/Notcher.dmg --title "Notcher $VERSION" --notes-file build/release-notes.md --latest
+          fi
+          echo "Published $TAG ($STATUS): https://github.com/${GITHUB_REPOSITORY}/releases/tag/$TAG"
+
+      - name: Remove the temporary keychain
+        if: always()
+        run: security delete-keychain "$RUNNER_TEMP/notcher.keychain-db" 2>/dev/null || true

@@ -38,6 +38,10 @@ jobs:
         run: swift test
       - name: Build Notcher.app
         run: ./Scripts/build-app.sh --zip
+      - name: Make the DMG
+        run: |
+          ./Scripts/make-dmg.sh
+          hdiutil verify build/Notcher.dmg
       - name: Upload app
         uses: actions/upload-artifact@v4
         with:
