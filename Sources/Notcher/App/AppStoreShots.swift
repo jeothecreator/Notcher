@@ -137,7 +137,8 @@ struct AppStoreShot: View {
         HStack(spacing: 18) {
             Image(systemName: "apple.logo")
             Text("Finder").bold()
-            ForEach(["File", "Edit", "View", "Go", "Window", "Help"], id: \.self) { Text($0) }
+            // Only the menus that end before the open notch, so none peek out cut in half.
+            ForEach(["File", "Edit", "View"], id: \.self) { Text($0) }
             Spacer()
             ForEach(["wifi", "battery.75percent", "magnifyingglass"], id: \.self) { Image(systemName: $0) }
             Text("Wed 1 Oct  9:41")
