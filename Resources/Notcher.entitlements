@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<!--
+  App Sandbox entitlements for the Mac App Store build (and `make sandbox`).
+  Notcher needs no network, camera, microphone or Apple Events. It only reads
+  ROM files the user drags in, opens from Finder or picks in an open panel,
+  and talks to game controllers (Bluetooth and USB).
+  Scripts/build-appstore.sh adds the application and team identifiers from
+  your provisioning profile when it signs.
+-->
+<dict>
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+	<key>com.apple.security.files.user-selected.read-only</key>
+	<true/>
+	<key>com.apple.security.device.bluetooth</key>
+	<true/>
+	<key>com.apple.security.device.usb</key>
+	<true/>
+</dict>
+</plist>

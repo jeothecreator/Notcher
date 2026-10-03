@@ -107,6 +107,10 @@ extension ArcadeController {
         var newCount = 0
         var failure: (title: String, subtitle: String)?
         for url in urls {
+            // Files from drops, Finder and the open panel arrive with
+            // sandbox access attached; hold it while the file is copied in.
+            let scoped = url.startAccessingSecurityScopedResource()
+            defer { if scoped { url.stopAccessingSecurityScopedResource() } }
             do {
                 let result = try library.importFile(at: url)
                 added.append(result.entry)

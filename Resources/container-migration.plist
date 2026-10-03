@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<!--
+  On the first launch of the sandboxed (App Store) build, macOS moves the
+  data of an earlier, non-sandboxed install into the app's container, so
+  scores, achievements and the ROM library carry over.
+-->
+<dict>
+	<key>Move</key>
+	<array>
+		<string>${ApplicationSupport}/Notcher</string>
+	</array>
+</dict>
+</plist>

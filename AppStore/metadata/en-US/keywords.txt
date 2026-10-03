@@ -1,0 +1,1 @@
+arcade,retro,emulator,rom,menu bar,notch,mini games,solitaire,sudoku,snake,2048,puzzle,word,idle

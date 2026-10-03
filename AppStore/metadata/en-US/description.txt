@@ -1,0 +1,30 @@
+Notcher turns the notch on your Mac into a game console.
+
+Move the pointer to the notch and it opens into a small arcade. Drag a game file onto it and the game starts right under the camera. Press Esc and you're back to work, with your spot saved for next time.
+
+PLAY GAMES YOU OWN
+• Drag a game file onto the notch, open it from Finder or pick it with Open ROM. Notcher adds it to your library and starts it.
+• Plays NES (.nes), Game Boy (.gb) and Game Boy Color (.gbc) game files, also inside a .zip.
+• Every game continues where you left off. Battery saves are kept for you, and there's a quick-save slot on top.
+• Pause, fast-forward and reset whenever you like.
+• Play with the keyboard or a game controller (Xbox, PlayStation, Switch Pro and MFi controllers).
+• Soft scanlines for NES games, an LCD pixel grid for Game Boy games, and classic green or Pocket grey for the original Game Boy.
+• Three small original demo games made for Notcher are included, so you can try it before adding your own.
+
+20 GAMES BUILT IN
+• Action: an endless runner, snake, a paddle duel, a brick breaker, an alien shooter, an asteroid field, light trails and a new micro game every day.
+• Puzzle: falling blocks, 2048, gem swapping, sudoku, mines and solitaire.
+• Brain: a five-letter word puzzle, a typing test, a reaction test and four in a row.
+• Idle: a mine and a farm that keep going while you work.
+• A daily challenge, personal bests, 59 trophies and play streaks.
+
+MADE FOR THE GAPS IN YOUR DAY
+A build, a download, a render, a coffee brewing: Notcher is for the half minutes in between. It lives in the menu bar, stays out of the way until you want it, and Esc always takes you straight back to what you were doing.
+
+• Games start only when you click them, so a passing pointer never starts one. A keyboard shortcut (⌃⌥⌘G) opens Notcher too.
+• On a Mac without a notch, Notcher sits at the top center of your screen.
+• No account, no ads, no tracking. Nothing you do leaves your Mac.
+
+Notcher doesn't include or download any commercial games. Only play games you own.
+
+NES, Game Boy and Game Boy Color are trademarks of Nintendo. Notcher is not affiliated with or endorsed by Nintendo.

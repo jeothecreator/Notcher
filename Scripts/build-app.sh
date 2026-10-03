@@ -9,6 +9,9 @@
 #   NOTCHER_SIGN_IDENTITY  a "Developer ID Application: …" identity to sign
 #                          with (hardened runtime, ready for notarization);
 #                          without it the app gets an ad-hoc signature
+#   NOTCHER_SANDBOX=1      run in the App Sandbox, like the App Store build
+#                          (Resources/Notcher.entitlements)
+#   NOTCHER_BUNDLE_ID      bundle identifier (default app.notcher.Notcher)
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -31,6 +34,17 @@ rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN" "$APP/Contents/MacOS/Notcher"
 sed -e "s/__VERSION__/$VERSION/" -e "s/__BUILD__/$BUILD/" Resources/Info.plist > "$APP/Contents/Info.plist"
+if [[ -n "${NOTCHER_BUNDLE_ID:-}" ]]; then
+  /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $NOTCHER_BUNDLE_ID" "$APP/Contents/Info.plist"
+fi
+# What the app does (and doesn't) do with data, for App Store review.
+cp Resources/PrivacyInfo.xcprivacy "$APP/Contents/Resources/"
+
+SANDBOX="${NOTCHER_SANDBOX:-0}"
+SIGN_FLAGS=()
+if [[ "$SANDBOX" == "1" ]]; then
+  SIGN_FLAGS=(--entitlements Resources/Notcher.entitlements)
+fi
 
 # App icon from the 1024px master.
 if [[ -f Resources/AppIcon.png ]] && command -v iconutil >/dev/null; then
@@ -48,13 +62,14 @@ fi
 IDENTITY="${NOTCHER_SIGN_IDENTITY:--}"
 if [[ "$IDENTITY" == "-" ]]; then
   # Ad-hoc signature so the app launches on this Mac.
-  codesign --force --sign - "$APP" >/dev/null
+  codesign --force --sign - ${SIGN_FLAGS[@]+"${SIGN_FLAGS[@]}"} "$APP" >/dev/null
 else
   # Developer ID: hardened runtime and a secure timestamp, as notarization requires.
   echo "▸ Signing as $IDENTITY"
-  codesign --force --options runtime --timestamp --sign "$IDENTITY" "$APP"
+  codesign --force --options runtime --timestamp --sign "$IDENTITY" ${SIGN_FLAGS[@]+"${SIGN_FLAGS[@]}"} "$APP"
   codesign --verify --strict --verbose=2 "$APP"
 fi
+if [[ "$SANDBOX" == "1" ]]; then echo "▸ Sandboxed (App Store configuration)"; fi
 echo "▸ Built $APP"
 
 if [[ "${1:-}" == "--zip" ]]; then

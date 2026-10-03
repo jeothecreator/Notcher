@@ -202,6 +202,21 @@ NOTCHER_SIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)" NOTARY_PROF
 
 Notcher runs as a menu bar agent: no Dock icon, with a 🎮 icon in the menu bar for Settings and Quit. The global shortcut **⌃⌥⌘G** opens the arcade with keyboard focus, and you can change it in Settings.
 
+### Mac App Store
+
+Notcher is ready for the Mac App Store. It runs in the App Sandbox with a privacy manifest, and the **App Store** workflow checks on every `[appstore]` commit that the sandboxed build starts, works and quits cleanly. [AppStore/README.md](AppStore/README.md) walks through what's left on Apple's side:
+- the App ID, certificates and profile
+- the App Store Connect record
+- uploading and TestFlight
+
+The listing text, review notes and screenshots are in [AppStore/](AppStore).
+
+```bash
+make sandbox                                                   # try the sandboxed version locally
+APPSTORE_PROFILE=~/Downloads/Notcher.provisionprofile make appstore   # signed build/Notcher.pkg for App Store Connect
+make appstore-shots                                            # re-render the App Store screenshots
+```
+
 ## How it's built
 
 ```

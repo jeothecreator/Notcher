@@ -1,0 +1,20 @@
+Thank you for reviewing Notcher.
+
+WHERE TO FIND IT
+Notcher is a menu bar app, so it has no Dock icon or main window. After it starts, a game controller icon appears in the menu bar.
+• Move the pointer to the notch at the top center of the built-in display and it opens. On a Mac without a notch, it opens from the top center of the main display.
+• You can also choose "Open Notcher" from the menu bar icon, or press Control-Option-Command-G.
+• Click a game to play it. Esc leaves the game and closes Notcher.
+
+TRYING THE EMULATOR
+No sign-in or files are needed. Open Notcher, click Library on the left, then click "Try the demos". This adds three small original demo games (Night Flight, Color Flight and Pocket Flight) that we made for Notcher and own. Click one to play: the arrow keys fly the ship and X is the A button. To try adding a file yourself, drag any of them out of the Library folder (menu bar icon → Show ROM Library in Finder) and drop it back onto the notch, or use Open ROM… (Command-O) from the menu bar icon.
+
+GUIDELINE 4.7 (GAME EMULATORS)
+Notcher includes a retro game console emulator. It doesn't include, sell, link to or download any commercial games. It only plays files the user already has and chooses through drag and drop, the Open panel or Finder's Open With. The 20 built-in games and the three demo games are all original to Notcher.
+
+ENTITLEMENTS
+• com.apple.security.files.user-selected.read-only: to read the game files the user drops on Notcher or picks in the Open panel. Notcher copies them into its own container.
+• com.apple.security.device.bluetooth and com.apple.security.device.usb: for game controllers.
+
+PRIVACY
+Notcher has no accounts, no network access and no analytics. Scores, saves and the game library stay on the Mac.

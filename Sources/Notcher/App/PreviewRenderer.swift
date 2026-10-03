@@ -9,11 +9,7 @@ enum PreviewRenderer {
     static func run(into folder: URL) {
         SoundEngine.shared.suppressed = true
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        let scratch = FileManager.default.temporaryDirectory.appendingPathComponent("notcher-previews-\(UUID().uuidString)")
-        let arcade = ArcadeController(store: SaveStore(folder: scratch))
-        arcade.metrics = NotchMetrics(notchWidth: 186, notchHeight: 32, hasNotch: true)
-        arcade.panelSize = ArcadeController.panelSize(for: arcade.metrics)
-        seed(arcade)
+        let arcade = makeArcade()
 
         func shot(_ name: String) {
             if arcade.mode.isPlaying { arcade.previewClearToasts() }
@@ -210,6 +206,17 @@ enum PreviewRenderer {
 
     // MARK: Rendering
 
+    /// An arcade on a 14-inch MacBook Pro notch, saving to a scratch folder,
+    /// with a few weeks of play behind it.
+    static func makeArcade() -> ArcadeController {
+        let scratch = FileManager.default.temporaryDirectory.appendingPathComponent("notcher-previews-\(UUID().uuidString)")
+        let arcade = ArcadeController(store: SaveStore(folder: scratch))
+        arcade.metrics = NotchMetrics(notchWidth: 186, notchHeight: 32, hasNotch: true)
+        arcade.panelSize = ArcadeController.panelSize(for: arcade.metrics)
+        seed(arcade)
+        return arcade
+    }
+
     static func render(_ name: String, arcade: ArcadeController, to folder: URL) {
         let panel = arcade.panelSize
         let stage = PreviewStage(arcade: arcade, panel: panel)
@@ -232,7 +239,10 @@ enum PreviewRenderer {
             return
         }
         let rep = NSBitmapImageRep(cgImage: image)
-        guard let data = rep.representation(using: .png, properties: [:]) else { return }
+        let data = url.pathExtension == "jpg"
+            ? rep.representation(using: .jpeg, properties: [.compressionFactor: 0.9])
+            : rep.representation(using: .png, properties: [:])
+        guard let data else { return }
         try? data.write(to: url)
         print("preview: wrote \(url.lastPathComponent)")
     }

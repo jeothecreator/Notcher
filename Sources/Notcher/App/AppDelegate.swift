@@ -15,6 +15,13 @@ enum NotcherMain {
             PreviewRenderer.run(into: URL(fileURLWithPath: path))
             return
         }
+        if let flag = args.firstIndex(of: "--render-appstore") {
+            Prefs.register()
+            _ = NSApplication.shared
+            let path = flag + 1 < args.count ? args[flag + 1] : "appstore"
+            AppStoreShots.run(into: URL(fileURLWithPath: path))
+            return
+        }
         let app = NSApplication.shared
         let delegate = AppDelegate()
         app.delegate = delegate
@@ -39,6 +46,11 @@ enum AppVersion {
     static var display: String {
         guard let build, !build.isEmpty else { return short }
         return "\(short) (build \(build))"
+    }
+
+    /// True in the App Store build, which runs in the App Sandbox.
+    static var isSandboxed: Bool {
+        ProcessInfo.processInfo.environment["APP_SANDBOX_CONTAINER_ID"] != nil
     }
 }
 
@@ -114,7 +126,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Only one Notcher can own the notch. A newly launched copy (say, a
     /// fresh build) asks any older one still in the menu bar to quit.
     private func quitOtherCopies() {
-        guard let id = Bundle.main.bundleIdentifier else { return }
+        // The App Store installs a single copy, and the sandbox doesn't let
+        // apps quit each other.
+        guard !AppVersion.isSandboxed, let id = Bundle.main.bundleIdentifier else { return }
         let me = ProcessInfo.processInfo.processIdentifier
         for other in NSRunningApplication.runningApplications(withBundleIdentifier: id) where other.processIdentifier != me {
             other.terminate()
