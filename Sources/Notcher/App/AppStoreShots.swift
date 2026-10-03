@@ -91,11 +91,13 @@ struct AppStoreShot: View {
     let wallpaper: Wallpaper
 
     static let size = CGSize(width: 1440, height: 900)
-    static let zoom: CGFloat = 1.32
+    static let zoom: CGFloat = 1.4
 
     var body: some View {
         let panel = arcade.panelSize
         let screenWidth = Self.size.width / Self.zoom
+        // Where the open notch ends; the caption is centered in the space below.
+        let notchBottom = arcade.shapeRect.maxY * Self.zoom
         ZStack(alignment: .top) {
             LinearGradient(colors: wallpaper.colors, startPoint: .topLeading, endPoint: .bottomTrailing)
             Circle().fill(wallpaper.glows.0.opacity(0.35)).frame(width: 700).blur(radius: 150).offset(x: -460, y: 420)
@@ -121,8 +123,9 @@ struct AppStoreShot: View {
             .foregroundStyle(Color.white)
             .shadow(color: .black.opacity(0.35), radius: 18, y: 6)
             .frame(width: 1180)
-            .frame(maxHeight: .infinity, alignment: .bottom)
-            .padding(.bottom, 78)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding(.top, notchBottom)
+            .padding(.bottom, 40)
         }
         .frame(width: Self.size.width, height: Self.size.height)
         .clipped()

@@ -131,7 +131,7 @@ struct NotchDropDelegate: DropDelegate {
         let group = DispatchGroup()
         for (index, provider) in providers.enumerated() {
             group.enter()
-            _ = provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { item, _ in
+            provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { item, _ in
                 if let data = item as? Data, let url = URL(dataRepresentation: data, relativeTo: nil) {
                     collector.set(url, at: index)
                 } else if let url = item as? URL {

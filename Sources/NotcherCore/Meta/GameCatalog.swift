@@ -102,7 +102,7 @@ public enum GameID: String, CaseIterable, Codable, Hashable, Sendable, Identifia
         case .astro: return "Drift, spin, shoot rocks."
         case .trails: return "Box them in with light."
         case .arcade: return "A new micro game daily."
-        case .stack: return "Clear lines, chase Tetrises."
+        case .stack: return "Clear lines, chase Stacks."
         case .twenty48: return "Slide your way to 2048."
         case .gems: return "Swap three, set off cascades."
         case .sudoku: return "Nine boxes, one answer."

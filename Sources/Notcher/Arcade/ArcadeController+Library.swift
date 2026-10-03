@@ -62,7 +62,8 @@ extension ArcadeController {
             do {
                 session = try ConsoleSession(entry: entry, library: library, resume: Prefs.resumeROMs)
             } catch {
-                let reason = (error as? CustomStringConvertible)?.description ?? "The ROM couldn't be read."
+                let known = (error as? EmulatorError)?.description ?? (error as? LibraryError)?.description
+                let reason = known ?? "The ROM couldn't be read."
                 showToast(Toast(symbol: "exclamationmark.triangle.fill", title: reason, subtitle: "Couldn't start \(entry.title)", colors: Self.errorColors))
                 return
             }
