@@ -120,7 +120,7 @@ codesign -d --entitlements - --xml "$APP" 2>/dev/null | plutil -p - 2>/dev/null 
 echo "▸ Packaging as $INSTALLER_IDENTITY"
 rm -f "$PKG"
 productbuild --component "$APP" /Applications --sign "$INSTALLER_IDENTITY" "$PKG"
-pkgutil --check-signature "$PKG" | head -3
+pkgutil --check-signature "$PKG"
 
 VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Contents/Info.plist")"
 BUILD="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP/Contents/Info.plist")"
